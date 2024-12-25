@@ -7,7 +7,7 @@
 
 ## Table of Contents:
 
-\* [Course Objectives](#course-objectives) * [Pre-requisites](#prerequisites) * [Recommended Text](#textbooks) * [Instructors](#instructors) * [Assignments](#assignments) * [Announcement](#announcement)
+\* [Course Objectives](#course-objectives) * [Pre-requisites](#prerequisites) * [Recommended Text](#textbooks) * [Instructors](#instructor) * [Assignments](#assignments) * [Announcement](#announcement)
 
 
 ## Course Objectives:
@@ -49,5 +49,5 @@ A course that covers linear regression and uses `R`, such as STAT 420/425. **Goo
 
 ------
 
-## Instructors:
+## Instructor:
 - Ruoqing Zhu [[Link]](https://sites.google.com/site/teazrq/home)
