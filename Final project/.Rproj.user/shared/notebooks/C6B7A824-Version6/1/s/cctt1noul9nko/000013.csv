@@ -1,0 +1,3 @@
+"0",""
+"0","# Mapping of samples onto the SOM"
+"0","plot(som_model, type = ""mapping"", pchs = 19, main = ""Sample Mapping"")"

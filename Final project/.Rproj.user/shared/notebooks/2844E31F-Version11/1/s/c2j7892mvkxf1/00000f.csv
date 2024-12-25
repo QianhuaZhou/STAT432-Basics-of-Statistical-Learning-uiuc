@@ -1,0 +1,6 @@
+"0","data <- read.csv(""used_cars.csv"")"
+"0","data[data == """"] <- NA"
+"0","data <- apply(data, 2, function(x) gsub(""^\\s*$"", NA, x))"
+"0","num_missing <- sum(!complete.cases(data))"
+"0","#num_missing"
+"0","data <- as.data.frame(data)"

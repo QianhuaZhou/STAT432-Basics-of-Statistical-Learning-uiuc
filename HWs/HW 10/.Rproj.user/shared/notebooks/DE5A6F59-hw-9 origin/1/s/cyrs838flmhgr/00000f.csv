@@ -1,0 +1,11 @@
+"0","  # inputs to download file"
+"0","  fileLocation <- ""https://pjreddie.com/media/files/mnist_train.csv"""
+"0","  numRowsToDownload <- 2600"
+"0","  localFileName <- paste0(""mnist_first"", numRowsToDownload, "".RData"")"
+"0","  "
+"0","  # download the data and add column names"
+"0","  mnist2600 <- read.csv(fileLocation, nrows = numRowsToDownload)"
+"2","Warning: URL 'https://pjreddie.com/media/files/mnist_train.csv': Timeout of 60 seconds was reached"
+"2","Error in file(file, ""rt"") : 
+  cannot open the connection to 'https://pjreddie.com/media/files/mnist_train.csv'
+"

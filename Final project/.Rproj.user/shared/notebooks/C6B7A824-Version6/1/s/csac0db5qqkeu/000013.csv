@@ -1,0 +1,7 @@
+"0",""
+"0","ggplot(data, aes(x = milage)) +"
+"0","  geom_histogram(binwidth = 10000, fill = ""lightblue"", color = ""black"", alpha = 0.7) +"
+"0","  labs(title = ""Distribution of Mileage"","
+"0","       x = ""Mileage (miles)"","
+"0","       y = ""Frequency"") +"
+"0","  theme_minimal()"

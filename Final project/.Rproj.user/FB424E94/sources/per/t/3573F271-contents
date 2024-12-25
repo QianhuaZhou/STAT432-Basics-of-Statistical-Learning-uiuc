@@ -1,0 +1,601 @@
+---
+title: "Used Car Price Prediction"
+author: "**Qianhua Zhou (qz33)**  \n**Jerry Liang (zhirong5)**  \n**Sirui Cao (siruic6)**\n"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    fig_width: 3.8
+    fig_height: 2.6
+    toc: true
+  word_document:
+    toc: true
+  html_document:
+    df_print: paged
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::clean_cache()
+```
+
+
+# Project Description and Abstract
+This project focuses on predicting used car prices by leveraging advanced machine learning techniques and a meticulous data preprocessing pipeline. The dataset was extensively cleaned to address missing values, categorize key variables such as mileage, brand, and year, and extract detailed features from complex fields like engine specifications and transmission types. These steps ensured a robust foundation for subsequent analysis.
+
+Unsupervised learning techniques played a critical role in enhancing data understanding and improving feature space organization. Principal Component Analysis (PCA) was applied to reduce dimensionality, simplifying the dataset into a manageable feature set while preserving essential information. This dimensionality reduction not only improved clustering performance but also facilitated insightful visualizations for exploring inherent data patterns. Clustering algorithms, including the Self-Organizing Map (SOM), were further employed to segment the dataset based on shared characteristics, uncovering structural relationships within the data and their impact on price predictions. By combining PCA and clustering, the project demonstrated the power of unsupervised learning to enhance data interpretability and predictive performance.
+
+Unlike the models reviewed in the Literature Review, which focused on basic preprocessing and standard model tuning, this project integrated advanced feature engineering techniques. These included systematically extracting and categorizing complex variables, such as engine specifications and transmission details, which were often overlooked in prior studies. This level of detail provided a competitive advantage, improving the models' accuracy and interpretability when working with high-dimensional and mixed-type data.
+
+The predictive component of the project centered on designing and fine-tuning five machine learning models:
+
+- Elastic Net: A linear regression model combining L1 and L2 penalties to address multicollinearity and perform feature selection, ensuring robust predictions.
+
+- K-Nearest Neighbors (KNN): A non-parametric approach using feature similarity (measured by Euclidean distance) to predict prices based on the average of neighboring observations.
+
+- Gradient Boosting Machine (GBM): An ensemble learning method combining weak learners (decision trees) to create a strong predictive model, optimized through iterative boosting techniques.
+
+- Random Forest: A powerful ensemble method that constructs multiple decision trees, averaging their predictions to minimize overfitting. This model achieved the highest performance, with a normalized Mean Squared Error (MSE) of 0.2528, emphasizing the importance of features such as model year, mileage, and brand.
+
+- Neural Network: A deep learning model designed to capture complex non-linear relationships in the dataset, providing competitive predictions after careful architecture tuning.
+
+All models underwent rigorous hyperparameter optimization using grid search and cross-validation to ensure optimal performance. The results underscored the importance of combining rigorous preprocessing, feature engineering, and advanced machine learning techniques to address real-world predictive challenges effectively.
+
+Key findings from this study emphasize the value of rigorous data preprocessing and feature engineering in handling high-dimensional and mixed-type datasets. The integration of unsupervised techniques, such as PCA and clustering, with predictive models improved both accuracy and interpretability. This approach demonstrates the potential of combining dimensionality reduction with machine learning in predictive modeling tasks. Overall, this project showcases a robust framework for data-driven problem-solving, offering valuable insights for research and industry applications.prediction, offering valuable insights for both research and industry applications.
+
+
+
+Statement of AI usage:
+We use ChatGPT to generate ideas for potential model selections, then write the code part by ourselves. And after we complete the draft version, we refine the description with GPT's help.
+
+
+# Literature Review
+
+**Paper1**:
+Samruddhi, K., & Kumar, R. A. (2020). Used car price prediction using K-nearest neighbor based model. Int. J. Innov. Res. Appl. Sci. Eng.(IJIRASE), 4(3), 2020-686.
+
+**Methodology**
+K-Nearest Neighbor (KNN) Regression
+
+- Purpose: Predict prices based on feature similarity measured by **Euclidean distance**.
+
+- Dataset: Use dataset from Kaggle, featuring variables such as mileage, engine type, fuel type, etc.
+
+- Data Preprocessing:
+Removed non-numerical parts from numerical features. Converted categorical variables (e.g., fuel type, transmission) into numerical representations. Separated the target variable (`Price`) from the feature set.
+    
+- Model Training: Implemented KNN to predict prices by averaging the values of the k nearest neighbors. Evaluated the model for k values ranging from 2 to 10. Performed hyperparameter tuning to identify the optimal k value.
+    
+- **Cross-Validation**: Applied k-fold cross-validation (5-fold and 10-fold) to assess model generalizability and avoid overfitting.
+    
+- Evaluation Metrics: Root Mean Squared Error (RMSE). Mean Absolute Error (MAE).
+
+**Findings**
+
+Optimal Performance: Best results achieved with **k=4**, delivering:
+Accuracy: 85%.
+RMSE: 4.01.
+MAE: 2.01.
+
+Cross-Validation Results: 10-fold cross-validation yielded an accuracy of **82%**.
+
+Comparison with Linear Regression: KNN significantly outperformed linear regression, which had an accuracy of **71%**.
+
+
+
+**Paper2**: Pal, N., Arora, P., Kohli, P., Sundararaman, D., & Palakurthy, S. S. (2019). How much is my car worth? A methodology for predicting used cars’ prices using random forest. In Advances in Information and Communication Networks: Proceedings of the 2018 Future of Information and Communication Conference (FICC), Vol. 1 (pp. 413-422). Springer International Publishing.
+
+**Methodology**
+
+Random Forest Regression
+
+Purpose: Predict used car prices by leveraging the ensemble learning technique of Random Forest regression.
+
+- Dataset: Utilized the Kaggle Used Car Dataset containing over 370,000 records with attributes like price, mileage, brand, vehicle type, etc.
+  
+- The data preprocessing phase involved removing irrelevant columns and filtering out unrealistic entries, such as cars manufactured before 1863. Boolean fields were converted to numeric values, and missing data was systematically handled. From the cleaned dataset, ten critical features—price, vehicleType, age, powerPS, kilometer, fuelType, brand, and others—were selected to build a robust predictive model.
+
+- For model training, the dataset was split into training (70%), testing (20%), and validation (10%) subsets to ensure reliable evaluation. Hyperparameters were optimized using a Grid Search Algorithm, focusing on the number of decision trees (500) and the maximum features considered at each split. The Random Forest model was applied for its strength in minimizing overfitting by averaging predictions across multiple decision trees, yielding reliable and accurate results.
+    
+- Evaluation Metrics: Coefficient of Determination (**R²**). Accuracy scores for training and testing data.
+
+
+**Findings**
+
+- Optimal Performance: Achieved a training accuracy of **95.82%** and testing accuracy of **83.63%**.
+The model effectively captured critical relationships between features and the target variable, producing reliable predictions.
+
+- Feature Importance: The analysis identified the most impactful features influencing price prediction: price (target variable), kilometer (mileage), brand, and vehicleType. These features played a crucial role in driving the model's accuracy and interpretability, underscoring their significance in the predictive framework.
+
+- Comparison: Demonstrated superior accuracy compared to linear regression and other simpler models, addressing overfitting through ensemble averaging.
+
+- Future Directions: Propose exploring advanced techniques like fuzzy logic and genetic algorithms for further improvement. Aim to develop an interactive system with a recommendation engine for predicting prices based on user-input features.
+
+
+This methodology highlights the effectiveness of Random Forest regression in solving complex prediction tasks while maintaining generalizability and interpretability.
+
+
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(caret)
+library(glmnet)
+library(cluster)
+library(kohonen)
+library(stargazer)
+library(reshape2)
+library(cluster)
+library(caret)    
+library(FNN)            
+library(gridExtra)  
+library(gbm)
+library(caret)
+library(randomForest)
+library(nnet)
+```
+
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data <- read.csv("used_cars.csv")
+data[data == ""] <- NA
+data <- apply(data, 2, function(x) gsub("^\\s*$", NA, x))
+num_missing <- sum(!complete.cases(data))
+#num_missing
+data <- as.data.frame(data)
+```
+
+# Data Processing and Summary Statistics
+#### Brand & Model
+The original dataset does not contain missing values for the "Brand" variable. Since "Brand" consists of 57 distinct values with a relatively sparse distribution, we grouped these brands into broader categories: "Cheap," "Mainstream," "Luxury," or "Other" based on well-known market associations. For this task, we utilized the `dplyr::case_when()` for conditional assignment and `stringr::str_detect()` for efficient text matching.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$clean_title[data$clean_title == ""] <- NA
+data$brand[data$brand == ""] <- NA
+brand_summary <- table(data$brand, useNA = "ifany")
+print(brand_summary)
+distinct_count <- length(unique(names(brand_summary)))
+print(distinct_count)
+```
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$brand <- case_when(
+  str_detect(data$brand, "(?i)Hyundai|Kia|Nissan|Toyota|Chevrolet|Ford|Honda|Volkswagen|Mazda|Buick|Subaru|Mitsubishi") ~ "Cheap",
+  str_detect(data$brand, "(?i)Jeep|GMC|Chrysler|Dodge|Ram|Acura|Volvo|MINI|Infiniti|Genesis|Lincoln") ~ "Mainstream",
+  str_detect(data$brand, "(?i)BMW|Mercedes-Benz|Audi|Lexus|Porsche|Jaguar|Cadillac|Land|Tesla|Maserati|Ferrari|Bentley|Rolls-Royce|Lamborghini|Aston|McLaren|Maybach|Lucid") ~ "Luxury",
+  TRUE ~ "Other"
+)
+
+brand_summary <- table(data$brand, useNA = "ifany")
+print(brand_summary)
+```
+#### Model Year
+The `model_year` variable has no missing values, with a range from 1974 to 2024. While most values fall between 2008 and 2023, the distribution is relatively sparse. To address this, we grouped model_year into four categories for easier analysis: "New"(2020~), "Recent"(2015~2020), "Old"(2010~2015), or "Very Old"(~2010). This grouping ensures a more balanced distribution of observations across categories. We use `dplyr::case_when()` for grouping.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$model_year[data$model_year == ""] <- NA
+model_year_summary <- table(data$model_year, useNA = "ifany")
+print(model_year_summary)
+data$model_year_dist <- data$model_year
+data$model_year_dist <- case_when(
+  data$model_year_dist >= 2020 ~ "New",
+  data$model_year_dist >= 2015 & data$model_year_dist < 2020 ~ "Recent",
+  data$model_year_dist >= 2010 & data$model_year_dist < 2015 ~ "Old",
+  data$model_year_dist < 2010 ~ "Very Old",
+  TRUE ~ "Unknown"  
+)
+
+model_year_dist_summary <- table(data$model_year_dist, useNA = "ifany")
+print(model_year_dist_summary)
+```
+#### Milage
+The `mileage` variable contains no missing values. We first removed non-numeric characters "mi." using function `gsub()` and categorized mileage into tiers.
+After converting to numeric type, we found the range vary from 0 to more than 150000, and the distribution is sparse. So we use `dplyr::case_when()` grouped milage into four categories: "Low Mileage"(~25000), "Moderate Mileage"(25000~75000), "High Mileage"(75000~150000), or "Very High Mileage"(150000~).
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$milage[data$milage == ""] <- NA
+milage_summary <- table(data$milage, useNA = "ifany")
+#print(milage_summary)
+
+data$milage <- as.numeric(gsub(",", "", gsub(" mi\\.", "", data$milage)))
+data$milage_dist <- data$milage
+data$milage_dist <- case_when(
+  data$milage_dist < 25000 ~ "Low Mileage",
+  data$milage_dist >= 25000 & data$milage_dist <= 75000 ~ "Moderate Mileage",
+  data$milage_dist > 75000 & data$milage_dist <= 150000 ~ "High Mileage",
+  data$milage_dist> 150000 ~ "Very High Mileage",
+  TRUE ~ "Unknown" 
+)
+
+milage_dist_summary <- table(data$milage_dist, useNA = "ifany")
+print(milage_dist_summary)
+```
+#### Engine 
+The `engine` in the original dataset contained a mix of information, including details about horsepower, engine size, number of cylinders, fuel type, and cylinder arrangement. We systematically extracted and processed this information to create the following new variables:
+
+- fuel_type: Extracted using case_when and str_detect to identify whether the engine was powered by gasoline, hybrid, electric, or diesel, with a fallback category of "Other."
+
+- horsepower: Extracted numeric values corresponding to horsepower from patterns like "X.XHP" using str_extract and converted them into numeric format after removing the "HP" suffix.
+
+- engine_size: Extracted engine size in liters from patterns like "X.XL" using str_extract and converted them to numeric format after removing the "L" suffix.
+
+- cylinders: Extracted the number of cylinders from phrases like "X Cylinder" using str_extract and converted the result to numeric.
+
+- cylinder_arrangement: Classified cylinder arrangements into categories such as "V," "Flat," and "Straight" using case_when and str_detect, with a fallback "N" for undefined arrangements.
+
+After extracting, there are around 800 missing entries out of 4009, and we handle the missing values by replacing them with the column's mean.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data <- as.data.frame(data)
+
+data <- data %>%
+  mutate(horsepower = str_extract(engine, "\\d+\\.\\d+HP")) %>%
+  mutate(horsepower = as.numeric(str_replace(horsepower, "HP", "")))
+
+data <- data %>%
+  mutate(engine_size = str_extract(engine, "\\d+\\.\\d+L")) %>%
+  mutate(engine_size = as.numeric(str_replace(engine_size, "L", "")))
+
+data <- data %>%
+  mutate(cylinders = str_extract(engine, "\\d+ Cylinder")) %>%
+  mutate(cylinders = as.numeric(str_extract(cylinders, "\\d+")))
+
+data <- data %>%
+  mutate(fuel_type = case_when(
+    str_detect(engine, "(?i)Gasoline") ~ "Gasoline",  
+    str_detect(engine, "(?i)Hybrid") ~ "Hybrid",      
+    str_detect(engine, "(?i)Electric") ~ "Electric",  
+    str_detect(engine, "(?i)Diesel") ~ "Diesel",      
+    TRUE ~ "Other"                                    
+  ))
+
+data <- data %>%
+  mutate(cylinder_arrangement = case_when(
+    str_detect(engine, "(?i)V") ~ "V",               
+    str_detect(engine, "(?i)Flat") ~ "Flat",         
+    str_detect(engine, "(?i)Straight") ~ "Straight", 
+    TRUE ~ "N"                                       
+  ))
+
+cols <- colnames(data)
+engine_index <- which(cols == "engine")
+data <- data %>%
+  select(
+    all_of(cols[1:(engine_index-1)]),             
+    horsepower, engine_size, cylinders,       
+    cylinder_arrangement, fuel_type,         
+    all_of(cols[(engine_index + 1):length(cols)][!(cols[(engine_index + 1):length(cols)] %in% 
+      c("horsepower", "engine_size", "cylinders", "fuel_type", "cylinder_arrangement"))]) 
+  )
+
+sum(is.na(data$horsepower))
+data$horsepower[is.na(data$horsepower)] <- mean(data$horsepower, na.rm = TRUE)
+data$engine_size[is.na(data$engine_size)] <- mean(data$engine_size, na.rm = TRUE)
+data$cylinders[is.na(data$cylinders)] <- mean(data$cylinders, na.rm = TRUE)
+```
+#### Transmission
+The original dataset's transmission variable contains diverse formats, including speed counts (e.g., "6-Speed A/T"), transmission types (e.g., "Automatic"), and ambiguous entries (e.g., "F" or "A/T").
+We extracts the transmission type from the transmission column in the data dataframe and adds a new column called transmission_type. Using conditional logic with `dplyr::case_when()`, we categorizes the transmission as "Automatic" if it contains keywords like "A/T", "Automatic", or "CVT", or as "Manual" if it contains "M/T" or "Manual". For all other values, we assigns "Other". 
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$transmission <- case_when(
+  str_detect(data$transmission, "(?i)A/T|Automatic|CVT") ~ "Automatic",   
+  str_detect(data$transmission, "(?i)M/T|Manual") ~ "Manual",             
+  TRUE ~ "Other"                                                          
+)
+
+transmission_summary <- table(data$transmission, useNA = "ifany")
+print(transmission_summary)
+```
+#### Ext_col
+There is no missing values for `ext_col`. 
+The original dataset’s ext_col variable contains diverse exterior colors and the distribution is sparse. So we use `dplyr::case_when()` categorize it into five categories:
+
+- Dark: Includes shades like black, brown, or dark-related keywords.
+
+- Light: Includes white, silver, grey, and light-related keywords.
+
+- Vivid: Encompasses bright colors like red, blue, green, and vibrant-related terms.
+
+- Unknown: Covers missing or uninformative values.
+
+- Other: Any entry that doesn’t fit the above categories.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$ext_col[data$ext_col == ""] <- NA
+sum(is.na(data$ext_col))
+ext_col_summary <- table(data$ext_col, useNA = "ifany")
+#print(ext_col_summary)
+
+data$ext_col <- case_when(
+  str_detect(data$ext_col, "(?i)black|noir|onyx|obsidian|carbon|brown|bronze|espresso|dark") ~ "Dark", 
+  str_detect(data$ext_col, "(?i)white|snow|pearl|alpine|glacier|frozen|chalk|beige|silver|grey|gray") ~ "Light", 
+  str_detect(data$ext_col, "(?i)red|ruby|scarlet|garnet|firecracker|violet|flame|vermilion|pink|yellow|gold|orange|green|blue|blu|turquoise|aqua|lapis|denim|azure") ~ "Vivid",  
+  is.na(data$ext_col) | data$ext_col == "" ~ "Unknown",  
+  TRUE ~ "Other" 
+)
+ext_col_summary <- table(data$ext_col, useNA = "ifany")
+print(ext_col_summary)
+```
+#### Int_col
+There is no missing values for `ixt_col`. 
+The original dataset’s int_col variable contains diverse exterior colors and the distribution is sparse. So we use `dplyr::case_when()` categorize it into five categories, similar to the process for `ext_col`.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$ext_col[data$int_col == ""] <- NA
+sum(is.na(data$int_col))
+data$int_col <- case_when(
+  str_detect(data$int_col, "(?i)black|noir|onyx|obsidian|carbon|brown|bronze|espresso|dark") ~ "Dark",  
+  str_detect(data$int_col, "(?i)white|snow|pearl|alpine|glacier|frozen|chalk|beige|silver|grey|gray") ~ "Light",  
+  str_detect(data$int_col, "(?i)red|ruby|scarlet|garnet|firecracker|violet|flame|vermilion|pink|yellow|gold|orange|green|blue|turquoise|aqua|lapis|denim|azure") ~ "Vivid",  
+  is.na(data$int_col) | data$int_col == "" | data$int_col == "-" ~ "Unknown",  
+  TRUE ~ "Other"  
+)
+
+int_col_summary <- table(data$int_col, useNA = "ifany")
+print(int_col_summary)
+```
+
+
+#### Accident 
+The original dataset’s accident variable contains values indicating accident history, such as "None reported," "At least 1 accident or damage reported," and missing entries(NA).The amount of missing entries is relative low(113 out of 4009), so we assume all the "NA" is equibalent to "None reported".
+So we recode it as:
+"None reported"/"NA" -> 0;
+"At least 1 accident or damage reported" -> 1
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$ext_col[data$accident == ""] <- NA
+sum(is.na(data$accident))
+
+data$accident <- ifelse(data$accident == "None reported", 0, 
+                        ifelse(data$accident == "At least 1 accident or damage reported", 1, -1))
+data$accident[is.na(data$accident)] <- 0
+
+accident_summary <- table(data$accident, useNA = "ifany")
+print(accident_summary)
+```
+#### Clean Title
+The code summarizes the clean_title column, counting "Yes," "No," and missing values using table(). It then recodes "Yes" to 1, "No" to 0, and replaces NA values with 0, ensuring the column is binary and complete for further analysis or modeling.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+clean_title_summary <- table(data$clean_title, useNA = "ifany")
+print(clean_title_summary)
+
+data$clean_title <- ifelse(data$clean_title == "Yes", 1, 0)
+data$clean_title[is.na(data$clean_title)] <- 0
+
+clean_title_summary <- table(data$clean_title, useNA = "ifany")
+print(clean_title_summary)
+```
+#### Price
+There is no missing values for `price`. 
+The original dataset’s `price` variable contains diverse exterior colors and the distribution is sparse. So we use `dplyr::case_when()` categorize it into five categories:
+"< $12,000", "$12,000 - $21,999", "$22,000 - $31,999", "$32,000 - $49,999", "$50,000 - $79,999", "> $80,000".
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$price[data$price == ""] <- NA
+sum(is.na(data$price))
+
+data$price <- as.numeric(gsub("[\\$,]", "", data$price))
+data$price_dist <- data$price
+data$price_dist <- case_when(
+  data$price < 12000 ~ "< $12,000",
+  data$price >= 12000 & data$price < 22000 ~ "$12,000 - $21,999",
+  data$price >= 22000 & data$price < 32000 ~ "$20,000 - $31,999",
+  data$price >= 32000 & data$price < 50000 ~ "$32,000 - $49,999",
+  data$price >= 50000 & data$price < 80000 ~ "$50,000 - $79,999",
+  data$price >= 80000 ~ "> $80,000",
+  TRUE ~ "Unknown"
+)
+
+print(table(data$price_dist, useNA = "ifany"))
+```
+
+Table of summary statistics:
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+stargazer(data, type = "text", title = "Descriptive Statistics", digits = 3, out = "summary_table.txt")
+#str(data)
+# Generate frequency tables for categorical variables
+categorical_vars <- c("brand", "model_year", "fuel_type", "cylinder_arrangement", "transmission", 
+                      "ext_col", "int_col", "model_year_dist", "milage_dist", "price_dist")
+```
+
+
+
+Refer the supplementary section for histogram plots, boxplots, correlation heatmap, frequency table, etc.
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=3, fig.height=2}
+price_threshold <- quantile(data$price, 0.95, na.rm = TRUE)
+filtered_data <- subset(data, price <= price_threshold)
+ggplot(filtered_data, aes(x = price)) +
+  geom_histogram(binwidth = 5000, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Price (Below 95th Percentile)",
+       x = "Price (USD)",
+       y = "Frequency") +
+  theme_minimal()
+
+
+ggplot(data, aes(x = model_year)) +
+  geom_bar(fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Model Year",
+       x = "Model Year",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
+
+ggplot(data, aes(x = milage)) +
+  geom_histogram(binwidth = 10000, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Mileage",
+       x = "Mileage (miles)",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+
+
+```{r, include=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=4}
+# List of categorical variables to plot
+categorical_vars <- c("brand", "fuel_type", "transmission", "ext_col", 
+                      "int_col", "model_year_dist", "milage_dist", "price_dist")
+
+# Create individual plots for each categorical variable
+plots <- list()
+for (var in categorical_vars) {
+  p <- ggplot(data, aes_string(x = var)) +
+    geom_bar(fill = "lightblue", color = "black", alpha = 0.7) +
+    theme_minimal() +
+    labs(title = paste("Count Plot of", var), x = var, y = "Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_text(stat='count', aes(label=..count..), vjust=-0.5)
+  plots[[var]] <- p
+}
+
+grid.arrange(grobs = plots[1:4], ncol = 2)  
+grid.arrange(grobs = plots[5:8], ncol = 2)  
+```
+
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=6, fig.height=4}
+max_price <- 100000
+
+# Creating individual boxplots with restricted y-axis range
+p1 <- ggplot(data, aes(x = fuel_type, y = price)) +
+  geom_boxplot(fill = "skyblue") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Fuel Type vs. Price", x = "Fuel Type", y = "Price")
+
+p2 <- ggplot(data, aes(x = cylinder_arrangement, y = price)) +
+  geom_boxplot(fill = "lightgreen") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Cylinder Arrangement vs. Price", x = "Cylinder Arrangement", y = "Price")
+
+p3 <- ggplot(data, aes(x = transmission, y = price)) +
+  geom_boxplot(fill = "coral") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Transmission vs. Price", x = "Transmission", y = "Price")
+
+p4 <- ggplot(data, aes(x = ext_col, y = price)) +
+  geom_boxplot(fill = "lightpink") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Exterior Color vs. Price", x = "Exterior Color", y = "Price")
+
+p5 <- ggplot(data, aes(x = int_col, y = price)) +
+  geom_boxplot(fill = "lightsalmon") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Interior Color vs. Price", x = "Interior Color", y = "Price")
+
+p6 <- ggplot(data, aes(x = brand, y = price)) +
+  geom_boxplot(fill = "lightskyblue") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Brand vs. Price", x = "Brand", y = "Price")
+
+# Arrange plots into a grid
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 2)
+```
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=5.5, fig.height=5.5}
+# Select only numeric columns from the data
+numeric_data <- data[sapply(data, is.numeric)]
+
+# Calculate the correlation matrix using only the numeric columns
+correlation_matrix <- cor(numeric_data, use = "complete.obs")
+
+# Melt the correlation matrix for use in ggplot2
+correlation_melted <- melt(correlation_matrix)
+
+# Plot the heatmap using ggplot2 with correlation values labeled
+ggplot(data = correlation_melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(value, 2)), size = 4) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name = "Correlation") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 10, hjust = 1)) +
+  coord_fixed() +
+  labs(title = "Correlation Heatmap")
+
+```
+
+
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+features <- data[, c("milage", "horsepower", "engine_size", 
+                     "ext_col", "int_col", "cylinders", 
+                     "accident", "transmission", "fuel_type", 
+                     "cylinder_arrangement")]
+
+# Identify numeric and categorical columns
+numeric_cols <- sapply(features, is.numeric)
+categorical_cols <- !numeric_cols
+
+# Step 1: Scale numerical columns
+features[, numeric_cols] <- scale(features[, numeric_cols])
+
+# Step 2: One-hot encode categorical variables
+# Convert categorical variables into dummy variables
+categorical_dummies <- model.matrix(~ . - 1, data = features[, categorical_cols])
+
+# Step 3: Combine scaled numerical and one-hot encoded categorical variables
+combined_features <- cbind(features[, numeric_cols], categorical_dummies)
+```
+
+
+
+
+# Unsupervised Learning
+
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE}
+
+combined_features_matrix <- as.matrix(combined_features)
+
+# Set up SOM grid
+som_grid <- somgrid(xdim = 5, ydim = 5, topo = "hexagonal")  # Adjust grid size as needed
+
+# Train the SOM
+set.seed(123)
+som_model <- som(X = combined_features_matrix, grid = som_grid, rlen = 100)  # Adjust 'rlen' for iterations
+
+# Visualizations
+# Training progress
+plot(som_model, type = "changes", main = "Training Progress")
+
+# Codebook vectors
+plot(som_model, type = "codes", main = "Codebook Vectors")
+
+# Mapping of samples onto the SOM
+plot(som_model, type = "mapping", pchs = 10, main = "Sample Mapping")
+
+# U-Matrix (distance between nodes)
+plot(som_model, type = "dist.neighbours", main = "U-Matrix")
+
+
+# Get cluster assignments from SOM model
+som_clusters <- as.integer(som_model$unit.classif)
+
+# Calculate silhouette scores
+som_silhouette <- silhouette(som_clusters, dist(combined_features_matrix))
+mean_som_silhouette <- mean(som_silhouette[, 3])
+#print(paste("Mean Silhouette Score for SOM:", mean_som_silhouette))
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+# Visualizations
+# Training progress
+plot(som_model, type = "changes", main = "Training Progress")
+
+# Codebook vectors
+plot(som_model, type = "codes", main = "Codebook Vectors")
+
+# Mapping of samples onto the SOM
+plot(som_model, type = "mapping", pchs = 6, main = "Sample Mapping")
+
+# U-Matrix (distance between nodes)
+plot(som_model, type = "dist.neighbours", main = "U-Matrix")
+
+# Get cluster assignments from SOM model
+som_clusters <- as.integer(som_model$unit.classif)
+
+# Calculate silhouette scores
+som_silhouette <- silhouette(som_clusters, dist(combined_features_matrix))
+mean_som_silhouette <- mean(som_silhouette[, 3])
+#print(paste("Mean Silhouette Score for SOM:", mean_som_silhouette))
+```

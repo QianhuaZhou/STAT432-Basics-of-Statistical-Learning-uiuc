@@ -1,0 +1,319 @@
+---
+title: "Stat 432 Homework 3"
+date: "Assigned: Sep 9, 2024; <span style='color:red'>Due: 11:59 PM CT, Sep 19, 2024</span>"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+---
+
+<style>
+  body {
+  text-align: justify}
+</style>
+
+```{css, echo=FALSE}
+  .solution {
+  background-color: #CCDDFF; /* Replace with your desired color */
+  }
+  
+  blockquote {
+  background-color: #CCDDFF; /* Replace with your desired color */
+  font-family: "Times New Roman", serif; /* Change to your desired font family */
+  /* font-size: 16px; /* Change to your desired font size */
+  font-weight: bold; /* Makes the text bold */
+  }
+```
+
+
+## Question 1: Another Simulation Study
+
+Here is a GPT-4 prompt I used:
+
+> What is the advantage of a Ridge regression? Can you suggest a simulation study to confirm that? Please write your code in R. 
+
+The following is the answer produced by GPT-4
+
+
+
+Ridge regression is a regularization technique that helps to solve the problem of multicollinearity in linear regression. It can handle high-dimensional data where the number of predictors may exceed the number of observations. The advantages include:
+
+  1. **Bias-Variance Tradeoff**: By adding a penalty term, ridge regression can reduce variance, thus preventing overfitting. While it does introduce bias, this tradeoff often leads to a better overall predictive performance.
+  2. **Stability**: It can handle ill-posed problems where multicollinearity exists, providing stable solutions.
+  3. **Including All Predictors**: Unlike Lasso regression, ridge regression includes all predictors in the model, shrinking their coefficients but not setting them to zero.
+
+You can simulate the advantage of Ridge regression by comparing its performance with ordinary linear regression on a dataset with multicollinearity. Here's an R script to conduct this study:
+
+```{r class.source="solution", message=FALSE, eval=FALSE}
+    # Load required library
+    library(MASS)
+    library(glmnet)
+    
+    # Simulate data with multicollinearity
+    set.seed(42)
+    n <- 100
+    p <- 10
+    X <- matrix(rnorm(n * p), n, p)
+    X[,2] <- X[,1] + rnorm(n) * 0.01 # Introducing multicollinearity
+    beta <- runif(p)
+    y <- X %*% beta + rnorm(n)
+    
+    # Ordinary Linear Regression
+    lm_model <- lm(y ~ X)
+    lm_pred <- predict(lm_model, newdata=data.frame(X=X))
+    
+    # Ridge Regression
+    ridge_model <- glmnet(X, y, alpha=0)
+    ridge_pred <- predict(ridge_model, s=0.01, newx=X)
+    
+    # Compare Performance
+    lm_mse <- mean((y - lm_pred)^2)
+    ridge_mse <- mean((y - ridge_pred)^2)
+    
+    cat("MSE of Ordinary Linear Regression:", lm_mse, "\n")
+    cat("MSE of Ridge Regression:", ridge_mse, "\n")
+```
+
+The script generates a dataset with multicollinearity and then compares the mean squared error (MSE) of ordinary linear regression and ridge regression. Typically, you'll observe that ridge regression provides a better performance in this scenario.
+
+***
+***
+
+  a. [15 points] Based on what we have learned, do you find this answer correct? does this code confirm the mentioned three properties of Ridge regressions? Please explain your judgement for each of them. Comment on how you would do to demonstrate these properties. You __do not need to__ write the code.
+
+      * Bias-Variance Trade-off
+      * Stability 
+      * Including All Predictors
+The first term is correct, ridge does have a variance-bias trade off. The code shows MSE,
+it is var+bias, so it does not completely show the first term. We can calculate the
+variance and bias separately, also we need many different values of lambda to show the
+trade offs. The second term is also correct, but the code does not show this. We can perform many simulations to see how linear model would produce different
+coefficient on predictors with multicollinearity and how ridge regression will produce a
+relatively stable result. The third thing is not true, both regression will include all
+predictors. We can show it by directly printing out what predictor is included in the
+outcome model.
+
+  b. [25 points] To properly demonstrate the bias-variance trade-off, we could consider using a (correct) simulation. Adapt this existing code into a simulation study to show this properties. While you are doing this, please consider the following:
+
+        * You can borrow similar ideas of simulation we used in previous lecture notes
+        * Modify the GPT-4 code with the following settings to generate the data:
+          * trainning sample size $trainn = 50$
+          * Testing sample size $testn = 200$
+          * $p = 200$
+          * Fix $b = rep(0.1, p)$ for all simulation runs
+        * Since linear regression doesn't work in this setting, you only need to consider `glmnet()`
+        * Use a set of $\lambda$ values `exp(seq(log(0.5), log(0.01), out.length = 100))*trainn`
+        * Instead of evaluating the bias and variance separately (we will do that in the future), we will __use the testing error as the metric__. 
+        * Demonstrate your result using plots and give a clear explanation of your findings. Particularly, which side of the result displays a large bias, and which side corresponds to a large variance?
+```{r}
+# Load the glmnet package
+library(glmnet)
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Parameters
+trainn <- 50
+testn <- 200
+p <- 200
+b <- rep(0.1, p)
+
+# Generate Training Data
+X_train <- matrix(rnorm(trainn * p), trainn, p)
+y_train <- X_train %*% b + rnorm(trainn)
+
+# Generate Testing Data
+X_test <- matrix(rnorm(testn * p), testn, p)
+y_test <- X_test %*% b + rnorm(testn)
+
+# Define lambda values
+lambda_values <- exp(seq(log(0.5), log(0.01), length.out = 100)) * trainn
+
+# Fit the model using glmnet
+fit <- glmnet(X_train, y_train, alpha = 1, lambda = lambda_values)
+
+# Predict on testing data for each lambda and calculate test error
+predictions <- predict(fit, newx = X_test)
+test_errors <- apply(predictions, 2, function(pred) mean((pred - y_test)^2))
+
+# Plot the testing error against log(lambda)
+plot(log(lambda_values), test_errors, type = "l", col = "blue", 
+     xlab = "Log(lambda)", ylab = "Testing Error",
+     main = "Testing Error vs Regularization Parameter (lambda)")
+
+# Highlight points of high bias and high variance
+abline(v = log(lambda_values[which.min(test_errors)]), col = "red", lty = 2)
+legend("topright", legend = c("Test Error", "Min Test Error"),
+       col = c("blue", "red"), lty = c(1, 2))
+```
+The plot demonstrates the bias-variance tradeoff in regularized regression using different
+values of $\lambda$. On the left side, where $\lambda$ is small, the model has low bias but high variance.
+As $\lambda$ increases, the model becomes more regularized, reducing variance but increasing bias,
+causes the testing error to rise. The red dashed line indicates the optimal $\lambda$, where the
+model achieves the best balance between bias and variance, minimizing the testing error.
+This reflects how increasing $\lambda$ shifts the model from low-bias/high-variance to
+high-bias/low-variance.
+## Question 2: Modeling High-Dimensional Data
+
+We will use the `golub` dataset from the `multtest` package. This dataset contains 3051 genes from 38 tumor mRNA samples from the leukemia microarray study Golub et al. (1999). This package is not included in `R`, but on `bioconductor`. Install the latest version of this package from `bioconductor`, and read the documentation of this dataset to understand the data structure of `golub` and `golub.cl`.
+
+  a. [25 points] We will not use this data for classification (the original problem). Instead, we will do a toy regression example to show how genes are highly correlated and could be used to predict each. Carry out the following tasks:
+
+      * Perform marginal association test for each gene with the response `golub.cl` using `mt.teststat()`. Use `t.equalvar` (two sample $t$ test with equal variance) as the test statistic. 
+      * Sort the genes by their p-values and select the top 100 genes
+      * Construct a dataset with the top 10 genes and another one (call it $X$) with the remaining genes
+      * Perform principal component analysis (PCA) on the top 100 genes and extract the first principal component, __use this as the outcome $y$__. Becareful about the oriantation of the data matrix. 
+      * Perform ridge regression with 19-fold cross-validation on $X$ and the outcome $y$. Does your model fit well? Can you provide detailed model fitting results to support your claim?
+      * Fit ridge regression but use GCV as the criterion. Does your model fit well?
+
+  b. [5 points] Based on your results, do you observe any bias-variance trade-off? If not, can you explain why? 
+```{r}
+library(multtest)
+library(BiocManager)
+library(glmnet)
+data(golub)
+test_stat <- mt.teststat(golub, golub.cl, test = "t.equalvar")
+p_values <- 2 * pt(-abs(test_stat), df = length(golub.cl) - 2)
+# Sort the p-values and select the top 100 genes
+top_100_genes <- order(p_values)[1:100]
+golub_top_100 <- golub[top_100_genes, ]
+# Top 10 genes dataset
+golub_top_10 <- golub[top_100_genes[1:10], ]
+# Remaining 90 genes (X)
+X <- golub[top_100_genes[11:100], ]
+# Perform PCA
+pca_result <- prcomp(t(golub_top_100))
+# Extract the first principal component
+y <- pca_result$x[, 1]
+# Perform ridge regression with 19-fold cross-validation
+cv_ridge <- cv.glmnet(t(X), y, alpha = 0, nfolds = 19)
+# Plot the cross-validation curve
+plot(cv_ridge)
+print(cv_ridge$lambda.min)
+
+# Best lambda value
+lambda_best <- cv_ridge$lambda.min
+# Fit the ridge regression model using the best lambda
+ridge_model <- glmnet(t(X), y, alpha = 0, lambda = lambda_best)
+predicted_values <- predict(ridge_model, newx = t(X))#modify the order
+# Model fitting results
+coef(ridge_model)
+cv_mse <- min(cv_ridge$cvm)
+cv_mse
+var(y)
+# Ridge regression using GCV
+ridge_gcv <- glmnet(t(X), y, alpha = 0, lambda = 0)
+# Check model coefficients for GCV-based fit
+gcv_mse <- min(ridge_gcv$cvm)
+print(gcv_mse)
+
+ridge_gcv <- glmnet(t(X), y, alpha = 0)
+gcv_score <- cv.glmnet(t(X), y, alpha = 0, type.measure = "mse", nfolds = 10)$cvm
+print(gcv_score)
+
+
+```
+the MSE is much smaller than the variance of y, indicating that the model is explaining a
+good portion of the variability. The lambda has a clear minimum, which suggests that the
+model is stable and not overly sensitive to lambda. This can indicate a good fit. According to the plot, the error bars are relatively small and do not overlap with the values on the right side, indicating stability. All these indicates a good fit.
+
+For GCV as the criterion, it does not seems to be a good fit. Though the score is decreasing, but we failed to take a minimum value, which indicates no convergence.
+
+Nothing directly shows the bias-variance trade-off. The current code only returns the optimal lambda and corresponding cross-validation error without explicitly breaking down how the trade-off is happening. It more shows how good my model fit is.
+## Question 3: Linear Regression with Coordinate Descent
+
+Recall the previous homework, we have a quadratic function for minimization. We know that analytical solution exist. However, in this example, let's use coordinate descent to solve the problem. To demonstrate this, let's consider the following simulated dataset, with design matrix $x$ (without intercept) and response vector $y$:
+
+
+```{r}
+  set.seed(432)
+  n <- 100
+  x <- matrix(rnorm(n*2), n, 2)
+  y <- 0.7 * x[, 1] + 0.5 * x[, 2] + rnorm(n)
+```
+
+We will consider a model without the intercept term. In this case, our objective function (of $\beta_1$ and $\beta_2$ for linear regression is to minimize the sum of squared residuals:
+
+$$ f(\beta_1, \beta_2) = \frac{1}{n} \sum_{i=1}^n (y_i - \beta_1 x_{i1} - \beta_2 x_{i2})^2 $$
+$$f(\beta_1, \beta_2) = \frac{1}{n} \sum_{i=1}^n \left[ y_i^2 - 2y_i \beta_1 x_{i1} - 2y_i \beta_2 x_{i2} + \beta_1^2 x_{i1}^2 + 2 \beta_1 \beta_2 x_{i1} x_{i2} + \beta_2^2 x_{i2}^2 \right]$$
+$$a = \frac{1}{n} \sum_{i=1}^n x_{i1}^2, \quad b = \frac{1}{n} \sum_{i=1}^n x_{i2}^2, \quad c = \frac{2}{n} \sum_{i=1}^n x_{i1} x_{i2}$$
+
+
+$$d = \frac{-2}{n} \sum_{i=1}^n y_i x_{i1}, \quad e = \frac{-2}{n} \sum_{i=1}^n y_i x_{i2}, \quad f = \frac{1}{n} \sum_{i=1}^n y_i^2$$
+
+where $x_{ij}$ represents the $j$th variable of the $i$th observation.
+
+  a. [10 points] Write down the objective function in the form of 
+  \[ f(x,y) = a \beta_1^2 + b \beta_2^2 + c \beta_1 \beta_2 + d \beta_1 + e \beta_2 + f \]
+    by specifying what are coefficients a, b, c, d, e, and f, using the simulated data. Calculate them in R, __using vector operations rather than for-loops__.
+```{r}
+set.seed(432)
+n <- 100
+x <- matrix(rnorm(n*2), n, 2)
+y <- 0.7 * x[, 1] + 0.5 * x[, 2] + rnorm(n)
+a <- sum(x[, 1]^2) / n
+b <- sum(x[, 2]^2) / n
+c <- 2 * sum(x[, 1] * x[, 2]) / n
+d <- -2 * sum(y * x[, 1]) / n
+e <- -2 * sum(y * x[, 2]) / n
+f <- sum(y^2) / n
+
+# Output the results
+list(a = a, b = b, c = c, d = d, e = e, f = f)
+```
+  b. [10 points] A coordinate descent algorithm essentially does two steps: 
+    i. Update $\beta_1$ to its optimal value while keeping $\beta_2$ fixed
+    ii. Update $\beta_2$ to its optimal value while keeping $\beta_1$ fixed
+    $$\beta_1 = \frac{-c \beta_2 - d}{2a}$$
+    $$\beta_2 = \frac{-c \beta_1 - e}{2b}$$
+    
+      Write down the updating rules for $\beta_1$ and $\beta_2$ using the coordinate descent algorithm. Use those previously defined coefficients in your fomula and write them in Latex. Implement them in a for-loop algorithm in R that iterates at most 100 times. Use the initial values $\beta_1 = 0$ and $\beta_2 = 0$. Decide your stopping criterion based on the change in $\beta_1$ and $\beta_2$. Validate your solution using the lm() function. 
+```{r}
+set.seed(432)
+n <- 100
+x <- matrix(rnorm(n * 2), n, 2)
+y <- 0.7 * x[, 1] + 0.5 * x[, 2] + rnorm(n)
+
+# Calculate coefficients
+a <- sum(x[, 1]^2) / n
+b <- sum(x[, 2]^2) / n
+c <- 2 * sum(x[, 1] * x[, 2]) / n
+d <- -2 * sum(y * x[, 1]) / n
+e <- -2 * sum(y * x[, 2]) / n
+
+# Initial values
+beta1 <- 0
+beta2 <- 0
+
+# Stopping criterion parameters
+tolerance <- 1e-6
+max_iter <- 100
+
+# Coordinate descent algorithm
+for (i in 1:max_iter) {
+  beta1_old <- beta1
+  beta2_old <- beta2
+  # Update beta1 keeping beta2 fixed
+  beta1 <- (-c * beta2 - d) / (2 * a)
+  # Update beta2 keeping beta1 fixed
+  beta2 <- (-c * beta1 - e) / (2 * b)
+}
+
+# Output the estimated values of beta1 and beta2
+cat("Estimated beta1:", beta1, "\n")
+cat("Estimated beta2:", beta2, "\n")
+
+# Validate with lm()
+model <- lm(y ~ x - 1) # Without intercept
+summary(model)
+```
+
+
+
+
+
+

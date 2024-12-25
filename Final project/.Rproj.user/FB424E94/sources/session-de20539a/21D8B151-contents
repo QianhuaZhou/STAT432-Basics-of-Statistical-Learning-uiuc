@@ -1,0 +1,97 @@
+---
+title: "Used Car Price Prediction"
+author: "**Qianhua Zhou (qz33)**  \n**Jerry Liang (zhirong5)**  \n**Sirui Cao (siruic6)**\n"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    fig_width: 3.8
+    fig_height: 2.6
+    toc: true
+  word_document:
+    toc: true
+  html_document:
+    df_print: paged
+subtitle: 'Presented by: Qianhua Zhou, Jerry Liang, Sirui Cao'
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::clean_cache()
+```
+
+
+# Project Description and Abstract
+This project focuses on predicting used car prices by leveraging advanced machine learning techniques and a meticulous data preprocessing pipeline. The dataset was extensively cleaned to address missing values, categorize key variables such as mileage, brand, and year, and extract detailed features from complex fields like engine specifications and transmission types. These steps ensured a robust foundation for subsequent analysis.
+
+Unsupervised learning techniques played a critical role in enhancing data understanding and improving feature space organization. Principal Component Analysis (PCA) was applied to reduce dimensionality, simplifying the dataset into a manageable feature set while preserving essential information. This dimensionality reduction not only improved clustering performance but also facilitated insightful visualizations for exploring inherent data patterns. Clustering algorithms, including the Self-Organizing Map (SOM), were further employed to segment the dataset based on shared characteristics, uncovering structural relationships within the data and their impact on price predictions. By combining PCA and clustering, the project demonstrated the power of unsupervised learning to enhance data interpretability and predictive performance.
+
+Unlike the models reviewed in the Literature Review, which focused on basic preprocessing and standard model tuning, this project integrated advanced feature engineering techniques. These included systematically extracting and categorizing complex variables, such as engine specifications and transmission details, which were often overlooked in prior studies. This level of detail provided a competitive advantage, improving the models' accuracy and interpretability when working with high-dimensional and mixed-type data.
+
+The predictive component of the project centered on designing and fine-tuning five machine learning models:
+
+- Elastic Net: A linear regression model combining L1 and L2 penalties to address multicollinearity and perform feature selection, ensuring robust predictions.
+
+- K-Nearest Neighbors (KNN): A non-parametric approach using feature similarity (measured by Euclidean distance) to predict prices based on the average of neighboring observations.
+
+- Gradient Boosting Machine (GBM): An ensemble learning method combining weak learners (decision trees) to create a strong predictive model, optimized through iterative boosting techniques.
+
+- Random Forest: A powerful ensemble method that constructs multiple decision trees, averaging their predictions to minimize overfitting. This model achieved the highest performance, with a normalized Mean Squared Error (MSE) of 0.2528, emphasizing the importance of features such as model year, mileage, and brand.
+
+- Neural Network: A deep learning model designed to capture complex non-linear relationships in the dataset, providing competitive predictions after careful architecture tuning.
+
+All models underwent rigorous hyperparameter optimization using grid search and cross-validation to ensure optimal performance. The results underscored the importance of combining rigorous preprocessing, feature engineering, and advanced machine learning techniques to address real-world predictive challenges effectively.
+
+Key findings from this study emphasize the value of rigorous data preprocessing and feature engineering in handling high-dimensional and mixed-type datasets. The integration of unsupervised techniques, such as PCA and clustering, with predictive models improved both accuracy and interpretability. This approach demonstrates the potential of combining dimensionality reduction with machine learning in predictive modeling tasks. Overall, this project showcases a robust framework for data-driven problem-solving, offering valuable insights for research and industry applications.prediction, offering valuable insights for both research and industry applications.
+
+
+
+Statement of AI usage:
+We use ChatGPT to generate ideas for potential model selections, then write the code part by ourselves. And after we complete the draft version, we refine the description with GPT's help.
+
+
+# Literature Review
+
+**Paper1**:
+Samruddhi, K., & Kumar, R. A. (2020). Used car price prediction using K-nearest neighbor based model. Int. J. Innov. Res. Appl. Sci. Eng.(IJIRASE), 4(3), 2020-686.
+
+**Methodology**
+K-Nearest Neighbor (KNN) Regression
+
+- Purpose: Predict prices based on feature similarity measured by **Euclidean distance**.
+
+- Dataset: Use dataset from Kaggle, featuring variables such as mileage, engine type, fuel type, etc.
+
+- Data Preprocessing:
+Removed non-numerical parts from numerical features. Converted categorical variables (e.g., fuel type, transmission) into numerical representations. Separated the target variable (`Price`) from the feature set.
+    
+- Model Training: Implemented KNN to predict prices by averaging the values of the k nearest neighbors. Evaluated the model for k values ranging from 2 to 10. Performed hyperparameter tuning to identify the optimal k value.
+    
+- **Cross-Validation**: Applied k-fold cross-validation (5-fold and 10-fold) to assess model generalizability and avoid overfitting.
+    
+- Evaluation Metrics: Root Mean Squared Error (RMSE). Mean Absolute Error (MAE).
+
+**Findings**
+
+Optimal Performance: Best results achieved with **k=4**, delivering:
+Accuracy: 85%.
+RMSE: 4.01.
+MAE: 2.01.
+
+Cross-Validation Results: 10-fold cross-validation yielded an accuracy of **82%**.
+
+Comparison with Linear Regression: KNN significantly outperformed linear regression, which had an accuracy of **71%**.
+
+
+```{r, echo=FALSE, results='asis'}
+cat("<br><br>")
+```
+
+**Paper2**: Pal, N., Arora, P., Kohli, P., Sundararaman, D., & Palakurthy, S. S. (2019). How much is my car worth? A methodology for predicting used cars’ prices using random forest. In Advances in Information and Communication Networks: Proceedings of the 2018 Future of Information and Communication Conference (FICC), Vol. 1 (pp. 413-422). Springer International Publishing.
+
+**Methodology**
+
+Random Forest Regression
+
+Purpose: Predict used car prices 

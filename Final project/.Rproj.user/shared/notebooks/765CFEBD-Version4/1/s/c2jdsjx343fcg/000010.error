@@ -1,0 +1,1 @@
+{"frames":[{"func":"createDataPartition(data_for_model$price, p = 0.5, list = FALSE)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error: object 'data_for_model' not found\n"}

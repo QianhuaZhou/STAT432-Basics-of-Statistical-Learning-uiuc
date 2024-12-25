@@ -1,0 +1,255 @@
+---
+title: "Linear Regression"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: '2'
+  header-includes:
+    - def\bX{\mathbf{X}}
+    - \def\bH{\mathbf{H}}
+    - \def\bI{\mathbf{I}}
+    - \def\bx{\mathbf{x}}
+    - \def\by{\mathbf{y}}
+    - \def\br{\mathbf{r}}
+    - \def\bzero{\mathbf{0}}
+    - \def\bbeta{\boldsymbol \beta}
+    - \def\bepsilon{\boldsymbol \epsilon}
+    - \def\T{\text{T}}
+    - \def\Cov{\text{Cov}}
+    - \def\Var{\text{Var}}
+    - \def\E{\text{E}}
+    - \def\pr{\text{pr}}
+    - \DeclareMathOperator*{\argmin}{arg\,min}
+    - \DeclareMathOperator*{\argmax}{arg\,max}
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width=9, fig.height=7, out.width = "75%", fig.align = 'center')
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse=TRUE)
+```
+
+
+
+## Example: real estate data 
+
+This [Real Estate data](https://archive.ics.uci.edu/ml/datasets/Real+estate+valuation+data+set) is provided on the [UCI machine learning repository](https://archive.ics.uci.edu/ml/index.php). The goal of this dataset is to predict the unit house price based on six different covariates: 
+
+  * `date`: Transaction date (e.g., 2013.250 = March 2013, 2013.500 = June 2013, etc.)
+  * `age`: Age of the house (in years)
+  * `distance`: Proximity to the nearest MRT station (in meters)
+  * `stores`: Number of accessible convenience stores on foot (integer)
+  * `latitude`: Latitude (in degrees)
+  * `longitude`: Longitude (in degrees)
+  * `price`: Price per unit area of the house
+
+```{r}
+    realestate = read.csv("realestate.csv", row.names = 1)
+    library(DT)
+    datatable(realestate, filter = "top", rownames = FALSE, options = list(pageLength = 8))
+    dim(realestate)
+```
+
+## Summary Statistics
+
+Understanding the data is the first crucial step in analysis. Summary statistics, visual figures, and tables can aid in this understanding. Identify categorical variables, consider transformations for continuous variables, and observe any outliers could be some initial steps you want to consider. These understandings could lead to a better data cleaning/processing. 
+
+```{r}
+    hist(realestate$price)
+    apply(realestate, 2, class)
+```
+
+Though these variables are read in as numerical, `stores` behaves similarly to a categorical variable but can also be treated as continuous. Some categories might be relatively sparse. Reducing them to a continuous variable or combining some categories could reduce the number of variables in the model.and lead to better statistical performance (to be discussed later).
+
+```{r}
+    table(realestate$stores)
+    table(realestate$stores > 5, realestate$age > 10)
+```
+
+The `date` variable is continuous but formatted with ordered unique values. Boxplots can visualize such variables effectively.
+
+```{r}
+    par(mfrow = c(1, 2))
+    plot(price ~ date, data = realestate)
+    boxplot(price ~ date, data = realestate)
+```
+
+Correlation analysis is commenly used to understand the relationship between variables. The `pairs()` function can be used to visualize the pairwise scatterplots. We can see that `price` is negatively correlated with `distance`.
+
+```{r}
+    pairs(realestate[, c("price", "age", "distance", "stores")], pch = 19)
+```
+
+## Basic Concepts
+
+We generally represent the observed covariates information as the design matrix, denoted by $\mathbf{X}$, with dimensions $n \times p$. In this specific example, the dimension of $\mathbf{X}$ is $414 \times 7$. Each variable is represented by a column in this matrix; for instance, the $j$th variable corresponds to the $j$th column and is denoted as $\mathbf{x}_j$. The outcome $\mathbf{y}$ (price) is a vector of length $414$. It's important to note that we typically use a "bold" symbol to represent a vector, whereas a single element (scalar), such as the $j$th variable of subject $i$, is represented as $x{ij}$.
+
+Linear regression models the relationship in matrix form as:
+
+$$\by_{n \times 1} = \bX_{n \times p} \bbeta_{p \times 1} + \bepsilon_{n \times 1}$$
+
+And we know that the solution is obtained by minimizing the residual sum of squares (RSS):
+
+\begin{align}
+\widehat{\bbeta} &= \underset{\bbeta}{\argmin} \sum_{i=1}^n \left(y_i - x_i^\T \bbeta \right)^2 \\
+&= \underset{\bbeta}{\argmin} \big( \mathbf y - \mathbf{X} \boldsymbol \beta \big)^\T \big( \mathbf y - \mathbf{X} \boldsymbol \beta \big)
+\end{align}
+
+This is an optimization problem, and in fact, it is a convex function of $\bbeta$ if the matrix $\bX^\T \bX$ is invertible. This will be explained later in the optimization lecture. The classical solution of a linear regression can be obtained by taking the derivative of RSS w.r.t $\bbeta$ and setting it to zero. This leads to the well known normal equation: 
+
+\begin{align}
+    \frac{\partial \text{RSS}}{\partial \bbeta} &= -2 \bX^\T (\by - \bX \bbeta) \overset{\text{set}}{=} 0 \\
+    \Longrightarrow \quad \bX^\T \by &= \bX^\T \bX \bbeta
+\end{align}
+
+Assuming that $\bX$ is of full rank, then $\bX^\T \bX$ is invertible, leading to:
+
+$$
+\widehat{\bbeta} = (\bX^\T \bX)^{-1}\bX^\T \by
+$$
+
+## Using the `lm()` Function
+
+Let's consider a regression model using `age` and `distance` to predict `price`. We can use the `lm()` function to fit this linear regression model. 
+
+```{r}
+    lm.fit = lm(price ~ age + distance, data = realestate)
+```
+
+This syntax contains three components:
+
+  * `data = ` specifies the dataset
+  * The outcome variable should be on the left-hand side of `~` 
+  * The covariates should be on the right-hand side of `~`
+
+Detailed model fitting results are saved in `lm.fit`. To view the model fitting results, we use the `summary()` function. 
+
+```{r}
+    lm.summary = summary(lm.fit)
+    lm.summary
+```
+
+This shows that both `age` and `distance` are highly significant for predicting the unit price. In fact, this fitted object (`lm.fit`) and the summary object (`lm.summary`) are both saved as a list. This is pretty common to handle an output object with many things involved. You can peek into these objects to explore what information they contain by using the `$` operator followed by the specific element's name. 
+
+<center>
+![](reactive.png){width=40%}
+</center>
+
+Usually, printing out the summary is sufficient. However, further details can be useful for other purposes. For example, if we are interested in the residual vs. fit plot, we may use 
+
+```{r}
+    plot(lm.fit$fitted.values, lm.fit$residuals, 
+         xlab = "Fitted Values", ylab = "Residuals",
+         col = "darkorange", pch = 19, cex = 0.5)
+```
+
+It seems that the error variance is not constant (as a function of the fitted values). Hence additional techniques may be required to handle this issue. However, that is beyond the scope of this book. 
+
+## Specifying Models
+
+### Higher-order terms and Interactions
+
+It is pretty simple if we want to include additional variables. This is usually done by connecting them with the `+` sign on the right-hand side of `~`. R also provides convenient ways to include interactions and higher-order terms. The following code with the interaction term between `age` and `distance`, and a squared term of `distance` should be self-explanatory. 
+
+```{r}
+    lm.fit2 = lm(price ~ age + distance + age*distance + I(distance^2), data = realestate)
+    summary(lm.fit2)
+```
+
+If you choose to include all covariates presented in the data, simply use `.` on the right-hand side of `~`. However, you should always be careful when doing this because some datasets would contain meaningless variables such as subject ID. 
+
+```{r eval=FALSE}
+    lm.fit3 = lm(price ~ ., data = realestate)
+```
+
+### Categorical Variables
+
+The `store` variable has several different values. We can see that it has 11 different values. One strategy is to model this as a continuous variable. However, we may also consider discretizing it. For example, we may create a new variable, say `store.cat`, defined as follows.
+
+```{r}
+  table(realestate$stores)
+
+  # define a new factor variable
+  realestate$store.cat = as.factor((realestate$stores > 0) + (realestate$stores > 4))
+  table(realestate$store.cat)
+  levels(realestate$store.cat) = c("None", "Several", "Many")
+  head(realestate$store.cat)
+```
+
+This variable is defined as a factor, which is often used for categorical variables. Since this variable has three different categories, if we include it in the linear regression, it will introduce two additional variables (using the third as the reference):
+
+```{r}
+    lm.fit3 = lm(price ~ age + distance + store.cat, data = realestate)
+    summary(lm.fit3)
+```
+
+There are usually two types of categorical variables:
+
+  * Ordinal: the numbers representing each category are ordered, e.g., how many stores are in the neighborhood. Oftentimes nominal data can be treated as a continuous variable.
+  * Nominal: they are not ordered and can be represented using either numbers or letters, e.g., ethnic group. 
+  
+The above example treats `store.cat` as a nominal variable, and the `lm()` function uses dummy variables for each category. However, many other machine learning models and packages could treat them differently. 
+
+### Interpreting Interactions
+
+Oftentimes, we may be interested in adding interaction terms. This should be relatively simple with continuous variables. However, sometimes confusing for categorical variables. For example, let's use an iteration term between `distance` and `store.cat`. 
+
+```{r}
+    lm.fit4 = lm(price ~ age + distance + store.cat + distance*store.cat, data = realestate)
+    summary(lm.fit4)
+```
+
+There are two additional terms representing the interaction between two categories: `Several` and `Many` with the term `distance`. Again, the `None` category is used as the reference. Hence, when an observation is of the `Several` category, it will "activate" both the `store.catSeveral` parameter and also the `distance:store.catSeveral` parameter. 
+
+In many of the later topics in this course, we will not rely on `R` functions to manage interaction or categorical variables for us. Instead, you can create additional columns in the dataset (feature engineering) based on your specific needs. And use them directly in a model fitting. The following code creates the variables used in the example above. 
+
+```{r}
+    newdata = cbind("Age" = realestate$age, "Distance" = realestate$distance,
+                    "Several" = realestate$store.cat == "Several",
+                    "Many" = realestate$store.cat == "Many",
+                    "Dist_Several" = realestate$distance*(realestate$store.cat == "Several"),
+                    "Dist_Many" = realestate$distance*(realestate$store.cat == "Many"))
+    head(newdata)
+```
+
+## Prediction
+
+We can use the fitted model to predict future subjects. There are typically two quantities we are interested in: 
+
+  * In-sample prediction: use the model to predict the outcome of the subjects used in the model fitting. The result is called training error. 
+  * Out-of-sample prediction: use the model to predict future subjects. The result is called testing error.
+
+These two predictions have very different meanings and behavior. The in-sample prediction is usually used to evaluate the model fitting performance. And since you intentionally chose the model to fit them well, the in-sample prediction is often more accurate. The out-of-sample prediction is often difficult. We will return to this topic in later lectures.
+
+For in-sample prediction of linear regression, we can use the `predict()` function without specifying any additional arguments. 
+
+```{r}
+    # the fitted values
+    fitted = predict(lm.fit)
+    head(fitted)
+    # the training error
+    mean((fitted - realestate$price)^2)
+```
+
+For out-of-sample prediction we set up a new dataset with the same format as the training data. For example, taking the model with just `age` and `distance` may construct a new dataset containing columns with these names. 
+
+```{r}
+  newdata = data.frame("age" = c(0, 10, 20, 30), "distance" = c(100, 500, 1000, 2000))
+  predict(lm.fit, newdata)
+```

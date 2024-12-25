@@ -1,0 +1,6 @@
+"0","data$clean_title[data$clean_title == """"] <- NA"
+"0","data$brand[data$brand == """"] <- NA"
+"0","brand_summary <- table(data$brand, useNA = ""ifany"")"
+"0","#print(brand_summary)"
+"0","distinct_count <- length(unique(names(brand_summary)))"
+"0","#print(distinct_count)"

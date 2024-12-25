@@ -1,0 +1,5 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0","knitr::clean_cache()"
+"2","Warning: This function must be called inside a source document"
+"1","NULL
+"

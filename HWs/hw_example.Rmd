@@ -1,0 +1,111 @@
+---
+title: 'Example Homework'
+author: "Ruoqing Zhu (rqzhu)"
+date: 'Due: Yesterday'
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    toc: yes
+    toc_depth: '2'
+    df_print: paged
+---
+
+__\textcolor{red}{You should remove instructions from this file.}__
+
+## Question 1 (40 Points) Bivariate Normal Distribution
+
+Generate 100 random variables from the bivariate Normal Distribution ${\cal N}(\mu, \Sigma)$, where $\mu = (1, 2)^\text{T}$ and
+
+$$\Sigma = \begin{pmatrix}
+  1 & 0.5 \\
+  0.5 & 2
+ \end{pmatrix}$$
+
+Use random seed 1. Report the sample mean vector. 
+
+### Answer: 
+
+This can be done using the `mvrnorm` function in the `MASS` package:
+
+```{r}
+  library(MASS)
+  set.seed(1)
+  Sigma <- matrix(c(1,0.5,0.5,2),2,2)
+  mu <- c(1, 2)
+  X <- mvrnorm(n = 100, mu, Sigma)
+```
+
+The mean vector of these 100 observations is (`r round(colMeans(X), 3)`). 
+
+## Question 2 (40 Points) Write `R` Functions
+
+Write an R function that outputs the first $n$ terms in the Fibonacci sequence, where $n$ is the only input value of the function. Use the function to find `fibonacci(10)`.
+
+### Answer: 
+
+```{r}
+  # construct the function 
+  fibonacci <- function(n)
+  {
+    x = numeric(n)
+    x[1:2] = c(1,1)
+    for(i in 3:n) x[i] = x[i-1] + x[i-2]
+    return(x)
+  }
+
+  # test the function 
+  fibonacci(10)
+```
+
+The 10th value in a Fibonacci sequence is `r tail(fibonacci(10), 1)`.
+
+## Question 3 (20 Points) Using AI Tools
+
+You can also use AI tools to help you calculate the Fibonacci sequence. Ask ChatGPT how this can be done. Is the answer efficient? Why? If its not a good solution, ask it to provide a better answer. Make sure to report your prompt.
+
+### Answer: 
+
+I first used the prompt
+
+> __\textcolor{blue}{"Can you give me a code to calculate the 10th value in a Fibonacci sequence?"}__
+
+Then ChatGPT provided this answer 
+
+```{r}
+    fibonacci <- function(n) {
+      if (n <= 1) return(n)
+      return(fibonacci(n - 1) + fibonacci(n - 2))
+    }
+    
+    tenth_value <- fibonacci(10)
+    print(tenth_value) # Output will be 55
+```
+
+However, this is very inefficient since it needs to calculate the entire previous sequence. Hence this is very slow for large numbers. Hence, I asked the follow-up prompt:
+
+> __\textcolor{blue}{"This is very inefficient. Can you provide a better solution?"}__
+
+The new answer is 
+
+```{r}
+    fibonacci <- function(n) {
+      a <- 0
+      b <- 1
+    
+      for (i in 2:n) {
+        temp <- a + b
+        a <- b
+        b <- temp
+      }
+    
+      return(b)
+    }
+    
+    tenth_value <- fibonacci(10)
+    print(tenth_value) # Output will be 55
+```
+
+The time complexity of this code is $O(n)$. 
+

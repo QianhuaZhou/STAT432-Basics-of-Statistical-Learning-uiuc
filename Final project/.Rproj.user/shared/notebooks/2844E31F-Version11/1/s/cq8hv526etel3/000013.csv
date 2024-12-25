@@ -1,0 +1,3 @@
+"0",""
+"0","#Use the best number of clusters (e.g., from Silhouette Method or Elbow)"
+"0","optimal_clusters <- which.max(sil_scores)"

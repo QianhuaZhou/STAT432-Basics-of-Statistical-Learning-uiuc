@@ -1,0 +1,1455 @@
+---
+title: "Used Car Price Prediction"
+author: "**Qianhua Zhou (qz33)**  \n**Jerry Liang (zhirong5)**  \n**Sirui Cao (siruic6)**\n"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    fig_width: 3.8
+    fig_height: 2.6
+    toc: true
+  word_document:
+    toc: true
+  html_document:
+    df_print: paged
+subtitle: 'Presented by: Qianhua Zhou, Jerry Liang, Sirui Cao'
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::clean_cache()
+```
+
+
+# Project Description and Abstract
+This project focuses on predicting used car prices by leveraging advanced machine learning techniques and a meticulous data preprocessing pipeline. The dataset was extensively cleaned to address missing values, categorize key variables such as mileage, brand, and year, and extract detailed features from complex fields like engine specifications and transmission types. These steps ensured a robust foundation for subsequent analysis.
+
+Unsupervised learning techniques played a critical role in enhancing data understanding and improving feature space organization. Principal Component Analysis (PCA) was applied to reduce dimensionality, simplifying the dataset into a manageable feature set while preserving essential information. This dimensionality reduction not only improved clustering performance but also facilitated insightful visualizations for exploring inherent data patterns. Clustering algorithms, including the Self-Organizing Map (SOM), were further employed to segment the dataset based on shared characteristics, uncovering structural relationships within the data and their impact on price predictions. By combining PCA and clustering, the project demonstrated the power of unsupervised learning to enhance data interpretability and predictive performance.
+
+Unlike the models reviewed in the Literature Review, which focused on basic preprocessing and standard model tuning, this project integrated advanced feature engineering techniques. These included systematically extracting and categorizing complex variables, such as engine specifications and transmission details, which were often overlooked in prior studies. This level of detail provided a competitive advantage, improving the models' accuracy and interpretability when working with high-dimensional and mixed-type data.
+
+The predictive component of the project centered on designing and fine-tuning five machine learning models:
+
+- Elastic Net: A linear regression model combining L1 and L2 penalties to address multicollinearity and perform feature selection, ensuring robust predictions.
+
+- K-Nearest Neighbors (KNN): A non-parametric approach using feature similarity (measured by Euclidean distance) to predict prices based on the average of neighboring observations.
+
+- Gradient Boosting Machine (GBM): An ensemble learning method combining weak learners (decision trees) to create a strong predictive model, optimized through iterative boosting techniques.
+
+- Random Forest: A powerful ensemble method that constructs multiple decision trees, averaging their predictions to minimize overfitting. This model achieved the highest performance, with a normalized Mean Squared Error (MSE) of 0.2528, emphasizing the importance of features such as model year, mileage, and brand.
+
+- Neural Network: A deep learning model designed to capture complex non-linear relationships in the dataset, providing competitive predictions after careful architecture tuning.
+
+All models underwent rigorous hyperparameter optimization using grid search and cross-validation to ensure optimal performance. The results underscored the importance of combining rigorous preprocessing, feature engineering, and advanced machine learning techniques to address real-world predictive challenges effectively.
+
+Key findings from this study emphasize the value of rigorous data preprocessing and feature engineering in handling high-dimensional and mixed-type datasets. The integration of unsupervised techniques, such as PCA and clustering, with predictive models improved both accuracy and interpretability. This approach demonstrates the potential of combining dimensionality reduction with machine learning in predictive modeling tasks. Overall, this project showcases a robust framework for data-driven problem-solving, offering valuable insights for research and industry applications.prediction, offering valuable insights for both research and industry applications.
+
+
+
+Statement of AI usage:
+We use ChatGPT to generate ideas for potential model selections, then write the code part by ourselves. And after we complete the draft version, we refine the description with GPT's help.
+
+
+# Literature Review
+
+**Paper1**:
+Samruddhi, K., & Kumar, R. A. (2020). Used car price prediction using K-nearest neighbor based model. Int. J. Innov. Res. Appl. Sci. Eng.(IJIRASE), 4(3), 2020-686.
+
+**Methodology**
+K-Nearest Neighbor (KNN) Regression
+
+- Purpose: Predict prices based on feature similarity measured by **Euclidean distance**.
+
+- Dataset: Use dataset from Kaggle, featuring variables such as mileage, engine type, fuel type, etc.
+
+- Data Preprocessing:
+Removed non-numerical parts from numerical features. Converted categorical variables (e.g., fuel type, transmission) into numerical representations. Separated the target variable (`Price`) from the feature set.
+    
+- Model Training: Implemented KNN to predict prices by averaging the values of the k nearest neighbors. Evaluated the model for k values ranging from 2 to 10. Performed hyperparameter tuning to identify the optimal k value.
+    
+- **Cross-Validation**: Applied k-fold cross-validation (5-fold and 10-fold) to assess model generalizability and avoid overfitting.
+    
+- Evaluation Metrics: Root Mean Squared Error (RMSE). Mean Absolute Error (MAE).
+
+**Findings**
+
+Optimal Performance: Best results achieved with **k=4**, delivering:
+Accuracy: 85%.
+RMSE: 4.01.
+MAE: 2.01.
+
+Cross-Validation Results: 10-fold cross-validation yielded an accuracy of **82%**.
+
+Comparison with Linear Regression: KNN significantly outperformed linear regression, which had an accuracy of **71%**.
+
+
+**Paper2**: Pal, N., Arora, P., Kohli, P., Sundararaman, D., & Palakurthy, S. S. (2019). How much is my car worth? A methodology for predicting used cars’ prices using random forest. In Advances in Information and Communication Networks: Proceedings of the 2018 Future of Information and Communication Conference (FICC), Vol. 1 (pp. 413-422). Springer International Publishing.
+
+**Methodology**
+
+Random Forest Regression
+
+Purpose: Predict used car prices by leveraging the ensemble learning technique of Random Forest regression.
+
+- Dataset: Utilized the Kaggle Used Car Dataset containing over 370,000 records with attributes like price, mileage, brand, vehicle type, etc.
+  
+- The data preprocessing phase involved removing irrelevant columns and filtering out unrealistic entries, such as cars manufactured before 1863. Boolean fields were converted to numeric values, and missing data was systematically handled. From the cleaned dataset, ten critical features—price, vehicleType, age, powerPS, kilometer, fuelType, brand, and others—were selected to build a robust predictive model.
+
+- For model training, the dataset was split into training (70%), testing (20%), and validation (10%) subsets to ensure reliable evaluation. Hyperparameters were optimized using a Grid Search Algorithm, focusing on the number of decision trees (500) and the maximum features considered at each split. The Random Forest model was applied for its strength in minimizing overfitting by averaging predictions across multiple decision trees, yielding reliable and accurate results.
+    
+- Evaluation Metrics: Coefficient of Determination (**R²**). Accuracy scores for training and testing data.
+
+
+**Findings**
+
+- Optimal Performance: Achieved a training accuracy of **95.82%** and testing accuracy of **83.63%**.
+The model effectively captured critical relationships between features and the target variable, producing reliable predictions.
+
+- Feature Importance: The analysis identified the most impactful features influencing price prediction: price (target variable), kilometer (mileage), brand, and vehicleType. These features played a crucial role in driving the model's accuracy and interpretability, underscoring their significance in the predictive framework.
+
+- Comparison: Demonstrated superior accuracy compared to linear regression and other simpler models, addressing overfitting through ensemble averaging.
+
+- Future Directions: Propose exploring advanced techniques like fuzzy logic and genetic algorithms for further improvement. Aim to develop an interactive system with a recommendation engine for predicting prices based on user-input features.
+
+
+This methodology highlights the effectiveness of Random Forest regression in solving complex prediction tasks while maintaining generalizability and interpretability.
+
+
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(caret)
+library(glmnet)
+library(cluster)
+library(kohonen)
+library(stargazer)
+library(reshape2)
+library(cluster)
+library(caret)    
+library(FNN)            
+library(gridExtra)  
+library(gbm)
+library(caret)
+library(randomForest)
+library(nnet)
+```
+
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data <- read.csv("used_cars.csv")
+data[data == ""] <- NA
+data <- apply(data, 2, function(x) gsub("^\\s*$", NA, x))
+num_missing <- sum(!complete.cases(data))
+#num_missing
+data <- as.data.frame(data)
+```
+
+# Data Processing and Summary Statistics
+#### Brand & Model
+The original dataset does not contain missing values for the "Brand" variable. Since "Brand" consists of 57 distinct values with a relatively sparse distribution, we grouped these brands into broader categories: "Cheap," "Mainstream," "Luxury," or "Other" based on well-known market associations. For this task, we utilized the `dplyr::case_when()` for conditional assignment and `stringr::str_detect()` for efficient text matching.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$clean_title[data$clean_title == ""] <- NA
+data$brand[data$brand == ""] <- NA
+brand_summary <- table(data$brand, useNA = "ifany")
+print(brand_summary)
+distinct_count <- length(unique(names(brand_summary)))
+print(distinct_count)
+```
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$brand <- case_when(
+  str_detect(data$brand, "(?i)Hyundai|Kia|Nissan|Toyota|Chevrolet|Ford|Honda|Volkswagen|Mazda|Buick|Subaru|Mitsubishi") ~ "Cheap",
+  str_detect(data$brand, "(?i)Jeep|GMC|Chrysler|Dodge|Ram|Acura|Volvo|MINI|Infiniti|Genesis|Lincoln") ~ "Mainstream",
+  str_detect(data$brand, "(?i)BMW|Mercedes-Benz|Audi|Lexus|Porsche|Jaguar|Cadillac|Land|Tesla|Maserati|Ferrari|Bentley|Rolls-Royce|Lamborghini|Aston|McLaren|Maybach|Lucid") ~ "Luxury",
+  TRUE ~ "Other"
+)
+
+brand_summary <- table(data$brand, useNA = "ifany")
+print(brand_summary)
+```
+#### Model Year
+The `model_year` variable has no missing values, with a range from 1974 to 2024. While most values fall between 2008 and 2023, the distribution is relatively sparse. To address this, we grouped model_year into four categories for easier analysis: "New"(2020~), "Recent"(2015~2020), "Old"(2010~2015), or "Very Old"(~2010). This grouping ensures a more balanced distribution of observations across categories. We use `dplyr::case_when()` for grouping.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$model_year[data$model_year == ""] <- NA
+model_year_summary <- table(data$model_year, useNA = "ifany")
+print(model_year_summary)
+data$model_year_dist <- data$model_year
+data$model_year_dist <- case_when(
+  data$model_year_dist >= 2020 ~ "New",
+  data$model_year_dist >= 2015 & data$model_year_dist < 2020 ~ "Recent",
+  data$model_year_dist >= 2010 & data$model_year_dist < 2015 ~ "Old",
+  data$model_year_dist < 2010 ~ "Very Old",
+  TRUE ~ "Unknown"  
+)
+
+model_year_dist_summary <- table(data$model_year_dist, useNA = "ifany")
+print(model_year_dist_summary)
+```
+#### Milage
+The `mileage` variable contains no missing values. We first removed non-numeric characters "mi." using function `gsub()` and categorized mileage into tiers.
+After converting to numeric type, we found the range vary from 0 to more than 150000, and the distribution is sparse. So we use `dplyr::case_when()` grouped milage into four categories: "Low Mileage"(~25000), "Moderate Mileage"(25000~75000), "High Mileage"(75000~150000), or "Very High Mileage"(150000~).
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$milage[data$milage == ""] <- NA
+milage_summary <- table(data$milage, useNA = "ifany")
+#print(milage_summary)
+
+data$milage <- as.numeric(gsub(",", "", gsub(" mi\\.", "", data$milage)))
+data$milage_dist <- data$milage
+data$milage_dist <- case_when(
+  data$milage_dist < 25000 ~ "Low Mileage",
+  data$milage_dist >= 25000 & data$milage_dist <= 75000 ~ "Moderate Mileage",
+  data$milage_dist > 75000 & data$milage_dist <= 150000 ~ "High Mileage",
+  data$milage_dist> 150000 ~ "Very High Mileage",
+  TRUE ~ "Unknown" 
+)
+
+milage_dist_summary <- table(data$milage_dist, useNA = "ifany")
+print(milage_dist_summary)
+```
+#### Engine 
+The `engine` in the original dataset contained a mix of information, including details about horsepower, engine size, number of cylinders, fuel type, and cylinder arrangement. We systematically extracted and processed this information to create the following new variables:
+
+- fuel_type: Extracted using case_when and str_detect to identify whether the engine was powered by gasoline, hybrid, electric, or diesel, with a fallback category of "Other."
+
+- horsepower: Extracted numeric values corresponding to horsepower from patterns like "X.XHP" using str_extract and converted them into numeric format after removing the "HP" suffix.
+
+- engine_size: Extracted engine size in liters from patterns like "X.XL" using str_extract and converted them to numeric format after removing the "L" suffix.
+
+- cylinders: Extracted the number of cylinders from phrases like "X Cylinder" using str_extract and converted the result to numeric.
+
+- cylinder_arrangement: Classified cylinder arrangements into categories such as "V," "Flat," and "Straight" using case_when and str_detect, with a fallback "N" for undefined arrangements.
+
+After extracting, there are around 800 missing entries out of 4009, and we handle the missing values by replacing them with the column's mean.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data <- as.data.frame(data)
+
+data <- data %>%
+  mutate(horsepower = str_extract(engine, "\\d+\\.\\d+HP")) %>%
+  mutate(horsepower = as.numeric(str_replace(horsepower, "HP", "")))
+
+data <- data %>%
+  mutate(engine_size = str_extract(engine, "\\d+\\.\\d+L")) %>%
+  mutate(engine_size = as.numeric(str_replace(engine_size, "L", "")))
+
+data <- data %>%
+  mutate(cylinders = str_extract(engine, "\\d+ Cylinder")) %>%
+  mutate(cylinders = as.numeric(str_extract(cylinders, "\\d+")))
+
+data <- data %>%
+  mutate(fuel_type = case_when(
+    str_detect(engine, "(?i)Gasoline") ~ "Gasoline",  
+    str_detect(engine, "(?i)Hybrid") ~ "Hybrid",      
+    str_detect(engine, "(?i)Electric") ~ "Electric",  
+    str_detect(engine, "(?i)Diesel") ~ "Diesel",      
+    TRUE ~ "Other"                                    
+  ))
+
+data <- data %>%
+  mutate(cylinder_arrangement = case_when(
+    str_detect(engine, "(?i)V") ~ "V",               
+    str_detect(engine, "(?i)Flat") ~ "Flat",         
+    str_detect(engine, "(?i)Straight") ~ "Straight", 
+    TRUE ~ "N"                                       
+  ))
+
+cols <- colnames(data)
+engine_index <- which(cols == "engine")
+data <- data %>%
+  select(
+    all_of(cols[1:(engine_index-1)]),             
+    horsepower, engine_size, cylinders,       
+    cylinder_arrangement, fuel_type,         
+    all_of(cols[(engine_index + 1):length(cols)][!(cols[(engine_index + 1):length(cols)] %in% 
+      c("horsepower", "engine_size", "cylinders", "fuel_type", "cylinder_arrangement"))]) 
+  )
+
+sum(is.na(data$horsepower))
+data$horsepower[is.na(data$horsepower)] <- mean(data$horsepower, na.rm = TRUE)
+data$engine_size[is.na(data$engine_size)] <- mean(data$engine_size, na.rm = TRUE)
+data$cylinders[is.na(data$cylinders)] <- mean(data$cylinders, na.rm = TRUE)
+```
+#### Transmission
+The original dataset's transmission variable contains diverse formats, including speed counts (e.g., "6-Speed A/T"), transmission types (e.g., "Automatic"), and ambiguous entries (e.g., "F" or "A/T").
+We extracts the transmission type from the transmission column in the data dataframe and adds a new column called transmission_type. Using conditional logic with `dplyr::case_when()`, we categorizes the transmission as "Automatic" if it contains keywords like "A/T", "Automatic", or "CVT", or as "Manual" if it contains "M/T" or "Manual". For all other values, we assigns "Other". 
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$transmission <- case_when(
+  str_detect(data$transmission, "(?i)A/T|Automatic|CVT") ~ "Automatic",   
+  str_detect(data$transmission, "(?i)M/T|Manual") ~ "Manual",             
+  TRUE ~ "Other"                                                          
+)
+
+transmission_summary <- table(data$transmission, useNA = "ifany")
+print(transmission_summary)
+```
+#### Ext_col
+There is no missing values for `ext_col`. 
+The original dataset’s ext_col variable contains diverse exterior colors and the distribution is sparse. So we use `dplyr::case_when()` categorize it into five categories:
+
+- Dark: Includes shades like black, brown, or dark-related keywords.
+
+- Light: Includes white, silver, grey, and light-related keywords.
+
+- Vivid: Encompasses bright colors like red, blue, green, and vibrant-related terms.
+
+- Unknown: Covers missing or uninformative values.
+
+- Other: Any entry that doesn’t fit the above categories.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$ext_col[data$ext_col == ""] <- NA
+sum(is.na(data$ext_col))
+ext_col_summary <- table(data$ext_col, useNA = "ifany")
+#print(ext_col_summary)
+
+data$ext_col <- case_when(
+  str_detect(data$ext_col, "(?i)black|noir|onyx|obsidian|carbon|brown|bronze|espresso|dark") ~ "Dark", 
+  str_detect(data$ext_col, "(?i)white|snow|pearl|alpine|glacier|frozen|chalk|beige|silver|grey|gray") ~ "Light", 
+  str_detect(data$ext_col, "(?i)red|ruby|scarlet|garnet|firecracker|violet|flame|vermilion|pink|yellow|gold|orange|green|blue|blu|turquoise|aqua|lapis|denim|azure") ~ "Vivid",  
+  is.na(data$ext_col) | data$ext_col == "" ~ "Unknown",  
+  TRUE ~ "Other" 
+)
+ext_col_summary <- table(data$ext_col, useNA = "ifany")
+print(ext_col_summary)
+```
+#### Int_col
+There is no missing values for `ixt_col`. 
+The original dataset’s int_col variable contains diverse exterior colors and the distribution is sparse. So we use `dplyr::case_when()` categorize it into five categories, similar to the process for `ext_col`.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$ext_col[data$int_col == ""] <- NA
+sum(is.na(data$int_col))
+data$int_col <- case_when(
+  str_detect(data$int_col, "(?i)black|noir|onyx|obsidian|carbon|brown|bronze|espresso|dark") ~ "Dark",  
+  str_detect(data$int_col, "(?i)white|snow|pearl|alpine|glacier|frozen|chalk|beige|silver|grey|gray") ~ "Light",  
+  str_detect(data$int_col, "(?i)red|ruby|scarlet|garnet|firecracker|violet|flame|vermilion|pink|yellow|gold|orange|green|blue|turquoise|aqua|lapis|denim|azure") ~ "Vivid",  
+  is.na(data$int_col) | data$int_col == "" | data$int_col == "-" ~ "Unknown",  
+  TRUE ~ "Other"  
+)
+
+int_col_summary <- table(data$int_col, useNA = "ifany")
+print(int_col_summary)
+```
+
+
+#### Accident 
+The original dataset’s accident variable contains values indicating accident history, such as "None reported," "At least 1 accident or damage reported," and missing entries(NA).The amount of missing entries is relative low(113 out of 4009), so we assume all the "NA" is equibalent to "None reported".
+So we recode it as:
+"None reported"/"NA" -> 0;
+"At least 1 accident or damage reported" -> 1
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$ext_col[data$accident == ""] <- NA
+sum(is.na(data$accident))
+
+data$accident <- ifelse(data$accident == "None reported", 0, 
+                        ifelse(data$accident == "At least 1 accident or damage reported", 1, -1))
+data$accident[is.na(data$accident)] <- 0
+
+accident_summary <- table(data$accident, useNA = "ifany")
+print(accident_summary)
+```
+#### Clean Title
+The code summarizes the clean_title column, counting "Yes," "No," and missing values using table(). It then recodes "Yes" to 1, "No" to 0, and replaces NA values with 0, ensuring the column is binary and complete for further analysis or modeling.
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+clean_title_summary <- table(data$clean_title, useNA = "ifany")
+print(clean_title_summary)
+
+data$clean_title <- ifelse(data$clean_title == "Yes", 1, 0)
+data$clean_title[is.na(data$clean_title)] <- 0
+
+clean_title_summary <- table(data$clean_title, useNA = "ifany")
+print(clean_title_summary)
+```
+#### Price
+There is no missing values for `price`. 
+The original dataset’s `price` variable contains diverse exterior colors and the distribution is sparse. So we use `dplyr::case_when()` categorize it into five categories:
+"< $12,000", "$12,000 - $21,999", "$22,000 - $31,999", "$32,000 - $49,999", "$50,000 - $79,999", "> $80,000".
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+data$price[data$price == ""] <- NA
+sum(is.na(data$price))
+
+data$price <- as.numeric(gsub("[\\$,]", "", data$price))
+data$price_dist <- data$price
+data$price_dist <- case_when(
+  data$price < 12000 ~ "< $12,000",
+  data$price >= 12000 & data$price < 22000 ~ "$12,000 - $21,999",
+  data$price >= 22000 & data$price < 32000 ~ "$20,000 - $31,999",
+  data$price >= 32000 & data$price < 50000 ~ "$32,000 - $49,999",
+  data$price >= 50000 & data$price < 80000 ~ "$50,000 - $79,999",
+  data$price >= 80000 ~ "> $80,000",
+  TRUE ~ "Unknown"
+)
+
+print(table(data$price_dist, useNA = "ifany"))
+```
+
+Table of summary statistics:
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+stargazer(data, type = "text", title = "Descriptive Statistics", digits = 3, out = "summary_table.txt")
+#str(data)
+# Generate frequency tables for categorical variables
+categorical_vars <- c("brand", "model_year", "fuel_type", "cylinder_arrangement", "transmission", 
+                      "ext_col", "int_col", "model_year_dist", "milage_dist", "price_dist")
+```
+
+
+
+Refer the supplementary section for histogram plots, boxplots, correlation heatmap, frequency table, etc.
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=3, fig.height=2}
+price_threshold <- quantile(data$price, 0.95, na.rm = TRUE)
+filtered_data <- subset(data, price <= price_threshold)
+ggplot(filtered_data, aes(x = price)) +
+  geom_histogram(binwidth = 5000, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Price (Below 95th Percentile)",
+       x = "Price (USD)",
+       y = "Frequency") +
+  theme_minimal()
+
+
+ggplot(data, aes(x = model_year)) +
+  geom_bar(fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Model Year",
+       x = "Model Year",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
+
+ggplot(data, aes(x = milage)) +
+  geom_histogram(binwidth = 10000, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Mileage",
+       x = "Mileage (miles)",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+
+
+```{r, include=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=4}
+# List of categorical variables to plot
+categorical_vars <- c("brand", "fuel_type", "transmission", "ext_col", 
+                      "int_col", "model_year_dist", "milage_dist", "price_dist")
+
+# Create individual plots for each categorical variable
+plots <- list()
+for (var in categorical_vars) {
+  p <- ggplot(data, aes_string(x = var)) +
+    geom_bar(fill = "lightblue", color = "black", alpha = 0.7) +
+    theme_minimal() +
+    labs(title = paste("Count Plot of", var), x = var, y = "Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_text(stat='count', aes(label=..count..), vjust=-0.5)
+  plots[[var]] <- p
+}
+
+grid.arrange(grobs = plots[1:4], ncol = 2)  
+grid.arrange(grobs = plots[5:8], ncol = 2)  
+```
+
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=6, fig.height=4}
+max_price <- 100000
+
+# Creating individual boxplots with restricted y-axis range
+p1 <- ggplot(data, aes(x = fuel_type, y = price)) +
+  geom_boxplot(fill = "skyblue") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Fuel Type vs. Price", x = "Fuel Type", y = "Price")
+
+p2 <- ggplot(data, aes(x = cylinder_arrangement, y = price)) +
+  geom_boxplot(fill = "lightgreen") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Cylinder Arrangement vs. Price", x = "Cylinder Arrangement", y = "Price")
+
+p3 <- ggplot(data, aes(x = transmission, y = price)) +
+  geom_boxplot(fill = "coral") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Transmission vs. Price", x = "Transmission", y = "Price")
+
+p4 <- ggplot(data, aes(x = ext_col, y = price)) +
+  geom_boxplot(fill = "lightpink") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Exterior Color vs. Price", x = "Exterior Color", y = "Price")
+
+p5 <- ggplot(data, aes(x = int_col, y = price)) +
+  geom_boxplot(fill = "lightsalmon") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Interior Color vs. Price", x = "Interior Color", y = "Price")
+
+p6 <- ggplot(data, aes(x = brand, y = price)) +
+  geom_boxplot(fill = "lightskyblue") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Brand vs. Price", x = "Brand", y = "Price")
+
+# Arrange plots into a grid
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 2)
+```
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=5.5, fig.height=5.5}
+# Select only numeric columns from the data
+numeric_data <- data[sapply(data, is.numeric)]
+
+# Calculate the correlation matrix using only the numeric columns
+correlation_matrix <- cor(numeric_data, use = "complete.obs")
+
+# Melt the correlation matrix for use in ggplot2
+correlation_melted <- melt(correlation_matrix)
+
+# Plot the heatmap using ggplot2 with correlation values labeled
+ggplot(data = correlation_melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(value, 2)), size = 4) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name = "Correlation") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 10, hjust = 1)) +
+  coord_fixed() +
+  labs(title = "Correlation Heatmap")
+
+```
+
+
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+features <- data[, c("milage", "horsepower", "engine_size", 
+                     "ext_col", "int_col", "cylinders", 
+                     "accident", "transmission", "fuel_type", 
+                     "cylinder_arrangement")]
+
+# Identify numeric and categorical columns
+numeric_cols <- sapply(features, is.numeric)
+categorical_cols <- !numeric_cols
+
+# Step 1: Scale numerical columns
+features[, numeric_cols] <- scale(features[, numeric_cols])
+
+# Step 2: One-hot encode categorical variables
+# Convert categorical variables into dummy variables
+categorical_dummies <- model.matrix(~ . - 1, data = features[, categorical_cols])
+
+# Step 3: Combine scaled numerical and one-hot encoded categorical variables
+combined_features <- cbind(features[, numeric_cols], categorical_dummies)
+```
+
+
+
+
+# Unsupervised Learning
+
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE}
+
+combined_features_matrix <- as.matrix(combined_features)
+
+# Set up SOM grid
+som_grid <- somgrid(xdim = 5, ydim = 5, topo = "hexagonal")  # Adjust grid size as needed
+
+# Train the SOM
+set.seed(123)
+som_model <- som(X = combined_features_matrix, grid = som_grid, rlen = 100)  # Adjust 'rlen' for iterations
+
+# Visualizations
+# Training progress
+plot(som_model, type = "changes", main = "Training Progress")
+
+# Codebook vectors
+plot(som_model, type = "codes", main = "Codebook Vectors")
+
+# Mapping of samples onto the SOM
+plot(som_model, type = "mapping", pchs = 19, main = "Sample Mapping")
+
+# U-Matrix (distance between nodes)
+plot(som_model, type = "dist.neighbours", main = "U-Matrix")
+
+
+# Get cluster assignments from SOM model
+som_clusters <- as.integer(som_model$unit.classif)
+
+# Calculate silhouette scores
+som_silhouette <- silhouette(som_clusters, dist(combined_features_matrix))
+mean_som_silhouette <- mean(som_silhouette[, 3])
+print(paste("Mean Silhouette Score for SOM:", mean_som_silhouette))
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+# Visualizations
+# Training progress
+plot(som_model, type = "changes", main = "Training Progress")
+
+# Codebook vectors
+plot(som_model, type = "codes", main = "Codebook Vectors")
+
+# Mapping of samples onto the SOM
+plot(som_model, type = "mapping", pchs = 19, main = "Sample Mapping")
+
+# U-Matrix (distance between nodes)
+plot(som_model, type = "dist.neighbours", main = "U-Matrix")
+
+# Get cluster assignments from SOM model
+som_clusters <- as.integer(som_model$unit.classif)
+
+# Calculate silhouette scores
+som_silhouette <- silhouette(som_clusters, dist(combined_features_matrix))
+mean_som_silhouette <- mean(som_silhouette[, 3])
+print(paste("Mean Silhouette Score for SOM:", mean_som_silhouette))
+```
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=16, fig.height=8}
+gower_dist <- daisy(combined_features, metric = "gower")
+hclust_result <- hclust(as.dist(gower_dist), method = "ward.D2")
+plot(hclust_result, 
+     main = "Dendrogram for Hierarchical Clustering (Mixed Data)", 
+     xlab = "Data Points", 
+     ylab = "Height")
+data$hclust_cluster <- cutree(hclust_result, k = 3)
+print("Cluster sizes: ")
+table(data$hclust_cluster)
+hclust_silhouette <- silhouette(data$hclust_cluster, gower_dist)
+mean_hclust_silhouette <- mean(hclust_silhouette[, 3])
+#print(paste("Mean Silhouette Score for Hierarchical Clustering:", mean_hclust_silhouette))
+```
+
+
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=3.5, fig.height=2.8}
+#Step 2: Perform PCA
+pca_result <- prcomp(combined_features, center = TRUE, scale. = TRUE)
+
+#Step 2: Analyze PCA variance to choose components
+summary(pca_result)  # Check proportion of variance explained
+explained_variance <- cumsum(pca_result$sdev^2) / sum(pca_result$sdev^2)
+plot(explained_variance, type = "b", 
+     xlab = "Number of Principal Components", 
+     ylab = "Cumulative Explained Variance", 
+     main = "Explained Variance by Principal Components")
+
+#Select first 2 components for clustering
+pca_data <- as.data.frame(pca_result$x[, 1:2])
+
+#Step 3: Determine Optimal Number of Clusters for K-Means
+#3.1 Silhouette Method
+sil_scores <- numeric()
+for (k in 2:10) {
+  set.seed(123)
+  kmeans_result <- stats::kmeans(pca_data, centers = k, nstart = 25)
+  sil_scores[k] <- mean(silhouette(kmeans_result$cluster, dist(pca_data))[, 3])
+}
+plot(2:10, sil_scores[2:10], type = "b", pch = 19,
+     xlab = "Number of Clusters", 
+     ylab = "Average Silhouette Width", 
+     main = "Silhouette Method for Optimal Clusters")
+
+#Use the best number of clusters (e.g., from Silhouette Method or Elbow)
+optimal_clusters <- which.max(sil_scores)
+```
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=3, fig.height=3}
+#Step 4: Apply K-means Clustering with Optimal Number of Clusters
+set.seed(123)
+kmeans_pca <- stats::kmeans(pca_data, centers = optimal_clusters, nstart = 25)
+
+#Add cluster labels to original data
+combined_features$pca_cluster <- as.factor(kmeans_pca$cluster)
+
+#Visualize clustering in PCA space
+plot(pca_data$PC1, pca_data$PC2, 
+     col = kmeans_pca$cluster, 
+     pch = 19, 
+     xlab = "Principal Component 1", 
+     ylab = "Principal Component 2", 
+     main = paste("K-Means Clustering with", optimal_clusters, "Clusters"))
+
+
+kmeans_silhouette <- silhouette(kmeans_pca$cluster, dist(pca_data))
+mean_kmeans_silhouette <- mean(kmeans_silhouette[, 3])
+#print(paste("Mean Silhouette Score for K-Means Clustering:", mean_kmeans_silhouette))
+```
+Among the three clustering methods evaluated, K-Means clustering with PCA emerged as the best, achieving a silhouette score of 0.5447 compared to 0.2405 for hierarchical clustering and 0.1746 for Self-Organizing Maps (SOM). SOM, which maps high-dimensional data onto a
+low-dimensional grid, struggled with cluster separability due to its reliance on topological preservation, resulting in poor clustering quality. Hierarchical clustering, utilizing Gower distance to handle mixed data types, provided slightly better results but remained limited by its sensitivity to noise and computational intensity. K-Means with PCA outperformed the others by leveraging dimensionality reduction to simplify data structure, mitigating the challenges posed by high-dimensional features and dummy variables for categorical data. PCA effectively retained the most informative variance while reducing noise and redundancy, enabling K-Means to form compact, well-separated clusters. This combination of PCA and K-Means proves particularly effective for large, mixed-type datasets, balancing computational efficiency and clustering accuracy.
+
+Categorical data was handled by transforming it into dummy variables, where each category was represented as a binary column indicating presence or absence. While this increases the dimensionality of the dataset, it allows clustering methods to treat categorical variables as numerical features. Hierarchical clustering addressed this using Gower distance, which combines numerical and categorical similarity metrics, ensuring mixed data types were treated appropriately. For K-Means, PCA effectively reduced the high-dimensional space resulting from dummy encoding, integrating categorical and numerical features into a low-dimensional space that captured the most significant variance in the data, enabling better clustering performance.
+
+The clustering and dimensionality reduction results previously obtained can significantly enhance supervised methods by simplifying the data structure and introducing high-level features, which can be directly used in some methods that only applies for low dimensional data.  Principal Component Analysis (PCA) reduced the dimensionality of the data while preserving most of its variance. For instance, the resulting principal components can be directly used as predictors in regression models or classification tasks, ensuring that only the most informative aspects of the data are included, which simplifies computation and improves model interpretability. Clustering added an extra layer of information by grouping data points based on similarity, effectively creating new categorical variables that represent latent structures within the data. These cluster labels or their distances from centroids can be incorporated as predictors, enriching supervised models with information about subgroup-level behaviors or characteristics that may influence the target variable.
+
+
+Refer the supplementary section for other related plots.
+
+# Prediction Models
+
+#### Model 1: elastic net, where we used PCAed data and cluster directly
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=4, fig.align='center'}
+data_for_model <- data.frame(
+  PC1 = pca_result$x[, 1],  # First principal component
+  PC2 = pca_result$x[, 2],  # Second principal component
+  cluster = as.numeric(combined_features$pca_cluster),  # Cluster labels as numeric
+  price = data$price  # Assuming `price` is already defined
+)
+
+# Step 1: Split data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(data_for_model$price, p = 0.5, list = FALSE)
+train_data <- data_for_model[train_index, ]
+test_data <- data_for_model[-train_index, ]
+
+# Step 2: Elastic Net model training
+# Create design matrices
+x_train <- model.matrix(price ~ ., train_data)[, -1]  # Exclude intercept
+y_train <- train_data$price
+x_test <- model.matrix(price ~ ., test_data)[, -1]
+y_test <- test_data$price
+
+# Perform Elastic Net with cross-validation
+set.seed(123)
+cv_model <- cv.glmnet(x_train, y_train, alpha = 0.5, family = "gaussian")  # Alpha = 0.5 for Elastic Net
+best_lambda <- cv_model$lambda.min  # Optimal lambda based on cross-validation
+
+# Fit the final model
+elastic_net_model <- glmnet(x_train, y_train, alpha = 0.5, lambda = best_lambda)
+
+# Step 3: Predict and evaluate
+predictions <- predict(elastic_net_model, newx = x_test)
+
+# Calculate Normalized MSE
+mean_price <- mean(y_test) 
+normalized_mse <- mean((predictions - y_test)^2) / mean_price^2  
+
+# Step 4.2: Bias-variance tradeoff plot (Normalized MSE vs Lambda)
+normalized_mse_values <- cv_model$cvm / mean_price^2  # Normalize the cross-validation MSEs
+plot(log(cv_model$lambda), normalized_mse_values, 
+     type = "b", 
+     xlab = "Log(Lambda)", 
+     ylab = "Normalized Mean Squared Error (Normalized MSE)", 
+     main = "Bias-Variance Tradeoff: Normalized MSE vs Lambda",
+     col = "blue", pch = 19)
+abline(v = log(best_lambda), col = "red", lwd = 2, lty = 2) 
+
+#cat("Best lambda (minimizing cross-validation error):", best_lambda, "\n")
+#cat("Alpha (Elastic Net mixing ratio):", 0.5, "\n")
+```
+In the Elastic Net regression example, PCA was used to extract the top two principal components, reducing the feature space while retaining the most critical information. These components were combined with cluster labels derived from the unsupervised learning process, creating a dataset where predictors are both low-dimensional and enriched with grouping information. Elastic Net, which balances L1 and L2 regularization, benefits from this reduced complexity and the removal of redundant information, leading to a better generalization. By including cluster labels, the model gains insight into potential segment-level differences, improving its ability to predict the target variable. The combination of PCA and clustering directly supports Elastic Net's linear assumptions and enhances its performance on high-dimensional data.
+
+The Elastic Net model results demonstrate a well-balanced approach to predictive modeling, leveraging both L1 and L2 regularization with an alpha value of 0.5. This balance ensures feature selection through sparsity while maintaining stability in the presence of multicollinearity. The bias-variance tradeoff plot highlights the optimal lambda value of approximately 59.34, which minimizes the normalized mean squared error (MSE), achieving the best tradeoff between model complexity and predictive performance. At lower lambda values, weaker regularization risks overfitting, while higher values result in underfitting due to overly constrained coefficients. The scatter plot of predicted vs. actual prices reveals that the model performs well for most data points, especially in the lower price ranges, as predictions align closely with the actual values. However, for higher-priced items, the predictions exhibit significant scatter, suggesting underprediction and reduced accuracy for outliers or extreme values. This indicates a potential need for additional feature engineering or targeted data augmentation to better capture variability in high-value cases. The model's use of dimensionality-reduced features (via PCA) combined with cluster information likely contributed to its ability to generalize for most cases.
+
+#### Model 2: KNN, where we used PCAed data and cluster directly
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=7, fig.height=6}
+# Step 1: Split the data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(data_for_model$price, p = 0.5, list = FALSE)
+train_data <- data_for_model[train_index, ]
+test_data <- data_for_model[-train_index, ]
+
+# Step 2: Normalize the predictor variables (k-NN requires normalization)
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+train_data_normalized <- train_data
+test_data_normalized <- test_data
+
+train_data_normalized[, c("PC1", "PC2", "cluster")] <- lapply(
+  train_data_normalized[, c("PC1", "PC2", "cluster")], 
+  normalize
+)
+test_data_normalized[, c("PC1", "PC2", "cluster")] <- lapply(
+  test_data_normalized[, c("PC1", "PC2", "cluster")], 
+  normalize
+)
+
+# Step 3: Extract predictors and target variable
+train_x <- train_data_normalized[, c("PC1", "PC2", "cluster")]
+test_x <- test_data_normalized[, c("PC1", "PC2", "cluster")]
+train_y <- train_data$price
+test_y <- test_data$price
+
+# Step 4: Tune k-NN model using cross-validation
+set.seed(123)
+tune_results <- train(
+  x = train_x,
+  y = train_y,
+  method = "knn",
+  trControl = trainControl(method = "cv", number = 5),  # 5-fold cross-validation
+  tuneGrid = data.frame(k = seq(3, 20, by = 2)) 
+)
+
+best_k <- tune_results$bestTune$k 
+
+# Step 5: Use the best k to predict on the test set
+predictions <- knn(
+  train = train_x,
+  test = test_x,
+  cl = train_y,
+  k = best_k
+)
+
+# Step 6: Evaluate performance
+predictions <- as.numeric(predictions)
+
+mean_test_price <- mean(test_y)
+normalized_mse <- mean((test_y - predictions)^2) / mean_test_price^2
+
+#cat("Best k:", best_k, "\n")
+#cat("Normalized MSE:", normalized_mse, "\n")
+
+# Step 7: Visualize k-NN Regression with Different k-values
+x_seq <- seq(min(train_data_normalized$PC1), max(train_data_normalized$PC1), length.out = 100)
+
+knn_fit <- function(k, train_x, train_y, test_x) {
+  knn_pred <- knn.reg(train = as.matrix(train_x), test = as.matrix(test_x), y = train_y, k = k)
+  return(knn_pred$pred)
+}
+
+# Create multiple k values to visualize
+k_values <- c(1, 5, 10, 19, 50)
+plots <- list()
+
+for (k in k_values) {
+  knn_predictions <- knn_fit(k, train_x = train_data_normalized$PC1, train_y = train_y, test_x = x_seq)
+  plot_data <- data.frame(
+    x_seq = x_seq,         
+    knn_fit = knn_predictions
+  )
+
+  p <- ggplot() +
+    geom_point(data = train_data_normalized, aes(x = PC1, y = train_y), alpha = 0.5, size = 2) +  
+    geom_line(data = plot_data, aes(x = x_seq, y = knn_fit), color = "orange", size = 1.2) + 
+    labs(title = paste("k =", k, "k=19 optimal"), x = "PC1", y = "Price") +
+    theme_minimal()
+
+  plots[[paste0("k_", k)]] <- p
+}
+do.call(grid.arrange, c(plots, ncol = 3))
+```
+
+Similarly, in the k-Nearest Neighbors (k-NN) model, PCA helped overcome the curse of dimensionality by projecting the data onto its first two principal components, making it suitable for distance-based methods. Clustering results were also incorporated as an additional feature, providing context about group-level similarities that k-NN could leverage. The predictors were normalized to ensure that all features contributed equally to the distance calculations. Cross-validation was used to tune the hyperparameter k, ensuring the optimal balance between bias and variance. The integration of unsupervised methods like PCA and clustering not only improved k-NN's predictive power but also ensured the model's robustness and interpretability across varying data complexities.
+
+The k-Nearest Neighbors (k-NN) regression results indicate that the best value for k, determined through cross-validation, is 19, which minimizes the normalized mean squared error (MSE) to approximately 2.95. This value of k provides the optimal balance between bias and variance.
+
+Considering the complexity of the nature of this problem, linear method and low dimensional method like elastic net and knn might not perform well, however we still perform it as a reference or demonstration of skill.
+
+
+
+#### Model 3: GBM, where we use both original data, pc1, 2, and cluster
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=5, fig.height=5, fig.align='center'}
+
+if ("price" %in% colnames(combined_features)) {
+  combined_features <- combined_features[, !colnames(combined_features) %in% "price"]
+}
+data_for_model <- cbind(
+  pca_data,                         # PCA-transformed features
+  cluster = as.numeric(kmeans_pca$cluster),  # Cluster labels
+  combined_features,                # Original features (scaled + dummy-encoded)
+  price = data$price                # Target variable
+)
+
+
+
+# Step 1: Split data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(data_for_model$price, p = 0.8, list = FALSE)
+train_data <- data_for_model[train_index, ]
+test_data <- data_for_model[-train_index, ]
+
+# Step 2: Remove `price` from predictors and create `log_price`
+train_data$log_price <- log1p(train_data$price)  # log(1 + price)
+test_data$log_price <- log1p(test_data$price)
+
+train_data <- train_data[, !colnames(train_data) %in% "price"]  # Remove `price`
+test_data <- test_data[, !colnames(test_data) %in% "price"]    # Remove `price`
+
+# Step 3: Train the Gradient Boosting Model
+set.seed(123)
+gbm_model <- gbm(
+  formula = log_price ~ ., 
+  data = train_data, 
+  distribution = "gaussian",  
+  n.trees = 700,  
+  interaction.depth = 5, 
+  shrinkage = 0.005, 
+  n.minobsinnode = 10,  
+  cv.folds = 8,  
+  verbose = FALSE
+)
+
+# Step 4: Determine the optimal number of trees based on cross-validation
+optimal_trees <- gbm.perf(gbm_model, method = "cv", plot.it = FALSE)
+
+# Step 5: Evaluate the Model
+# 5.1: Predict on training and test sets (back-transform log_price to price)
+train_data$predicted_price <- expm1(predict(gbm_model, newdata = train_data, n.trees = optimal_trees))
+test_data$predicted_price <- expm1(predict(gbm_model, newdata = test_data, n.trees = optimal_trees))
+
+# 5.2: Calculate R-squared and Normalized MSE
+# Training R-squared
+rss_train <- sum((train_data$log_price - log1p(train_data$predicted_price))^2)
+tss_train <- sum((train_data$log_price - mean(train_data$log_price))^2)
+r_squared_train <- 1 - (rss_train / tss_train)
+
+# Testing R-squared
+rss_test <- sum((test_data$log_price - log1p(test_data$predicted_price))^2)
+tss_test <- sum((test_data$log_price - mean(test_data$log_price))^2)
+r_squared_test <- 1 - (rss_test / tss_test)
+
+# Testing Normalized MSE
+mean_test_price <- mean(data$price)
+normalized_mse_test <- mean((data$price - test_data$predicted_price)^2) / mean_test_price^2
+
+# Step 6: Output Results
+#cat("Optimal number of trees:", optimal_trees, "\n")
+#cat("R-squared on Training Data:", r_squared_train, "\n")
+#cat("R-squared on Test Data:", r_squared_test, "\n")
+#cat("Normalized MSE on Test Data:", normalized_mse_test, "\n")
+
+# Step 7: Summary of GBM
+#summary(gbm_model)
+```
+
+The Gradient Boosting Model (GBM) was trained using a dataset that integrated PCA-transformed features, cluster labels from k-means clustering, and the original scaled and dummy-encoded features to predict the logarithmic transformation of price (log_price). After splitting the data into training and test sets, the model determined the optimal number of trees to be 700 based on 8-fold cross-validation. The model achieved an r-squared of 0.75391 on the training data and 0.751 on the test data, indicating that it explains most of the variance in the logarithmic price. The normalized mean squared error (NMSE) on the test set was 3.4917, reflecting good predictive accuracy. The variable importance analysis identified mileage, horsepower, and engine size as the most influential predictors, aligning with expectations regarding their impact on vehicle valuation. This methodology effectively demonstrates the benefits of combining PCA, clustering, and GBM to handle complex, high-dimensional data and improve predictive performance. Consider the high dimensionality of orginal data and the output, GBM is the best model among all so far.
+(Refer the supplementary section for related plots.)
+
+
+#### Model 4: Random forest, where we used features in original data directly
+```{r, echo=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=3, fig.height=2}
+# Step 1: Create the data set with log-transformed target variable
+data_for_model <- data
+
+# Split data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(data_for_model$price, p = 0.8, list = FALSE)
+train_data <- data_for_model[train_index, ]
+test_data <- data_for_model[-train_index, ]
+
+# Step 2: Remove `price` from predictors and create `log_price`
+train_data$log_price <- log1p(train_data$price)  # log(1 + price)
+test_data$log_price <- log1p(test_data$price)
+
+train_data <- train_data[, !colnames(train_data) %in% "price"]  # Remove `price`
+test_data <- test_data[, !colnames(test_data) %in% "price"]    # Remove `price`
+
+# Step 3: Tune hyperparameters for Random Forest
+set.seed(123)
+rf_grid <- expand.grid(
+  mtry = c(2, 4, 6, 8, 10)  # Tuning only `mtry`
+)
+
+train_control <- trainControl(method = "cv", number = 5)  # 5-fold CV
+
+rf_tuned <- train(
+  log_price ~ ., data = train_data,
+  method = "rf",
+  trControl = train_control,
+  tuneGrid = rf_grid,
+  ntree = 500  # Number of trees
+)
+
+# Best parameters
+print(rf_tuned$bestTune)
+
+```
+The Random Forest model, an ensemble learning method based on decision trees, was utilized for predicting car prices. This method constructs multiple decision trees during the training phase and combines their outputs to improve prediction accuracy. Random Forest is particularly effective in capturing non-linear relationships among features and is robust against outliers, making it suitable for this dataset.
+
+Tuning Process:
+To optimize the performance of the model, hyperparameters such as the number of features considered for splitting (mtry) and the number of trees (ntree) were tuned. A grid search approach was implemented to explore values for mtry, specifically 2, 4, 6, 8, 10. Five-fold cross-validation was performed to select the best value of mtry that minimized error. The optimal mtry was determined to be 10, ensuring that the model could balance bias and variance effectively.
+
+```{r, include=FALSE, fig.show="hide", message=FALSE, warning=FALSE, fig.width=3, fig.height=2}
+# Step 4: Train Random Forest model with optimal `mtry`
+set.seed(123)
+rf_model <- randomForest(
+  log_price ~ ., 
+  data = train_data,
+  ntree = 500,
+  mtry = rf_tuned$bestTune$mtry,
+  importance = TRUE
+)
+
+# Step 5: Evaluate the model
+
+# Predictions on training and testing sets
+rf_predictions_train <- predict(rf_model, train_data)
+rf_predictions_test <- predict(rf_model, test_data)
+
+# Back-transform predictions and log_price to original scale
+rf_predictions_train_exp <- expm1(rf_predictions_train)  # exp(log(1 + x)) - 1
+rf_predictions_test_exp <- expm1(rf_predictions_test)
+
+train_actual_price <- expm1(train_data$log_price)  # Back-transform `log_price`
+test_actual_price <- expm1(test_data$log_price)
+
+# Calculate R-squared for Training and Testing Data
+# Training R-squared
+rss_train <- sum((train_actual_price - rf_predictions_train_exp)^2)
+tss_train <- sum((train_actual_price - mean(train_actual_price))^2)
+r_squared_train <- 1 - (rss_train / tss_train)
+
+# Testing R-squared
+rss_test <- sum((test_actual_price - rf_predictions_test_exp)^2)
+tss_test <- sum((test_actual_price - mean(test_actual_price))^2)
+r_squared_test <- 1 - (rss_test / tss_test)
+
+# Calculate Normalized Mean Squared Error (NMSE) for Testing Data
+mean_test_price <- mean(test_actual_price)
+normalized_mse_test <- mean((test_actual_price - rf_predictions_test_exp)^2) / mean_test_price^2
+
+# Output Results
+#cat("R-squared on Training Data:", r_squared_train, "\n")
+#cat("R-squared on Testing Data:", r_squared_test, "\n")
+#cat("Normalized MSE on Test Data:", normalized_mse_test, "\n")
+
+```
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=3.4, fig.height=2.8}
+
+# Step 6: Feature Importance Plot
+rf_importance <- as.data.frame(importance(rf_model))
+rf_importance$Feature <- rownames(rf_importance)
+
+ggplot(rf_importance, aes(x = reorder(Feature, `%IncMSE`), y = `%IncMSE`)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  coord_flip() +
+  labs(title = "Important Feature(RF)", x = "Features", y = "Importance")
+
+# Step 7: Plot normalized residuals distribution
+residuals_test <- test_actual_price - rf_predictions_test_exp  # Residuals on test data
+normalized_residuals <- (residuals_test - mean(residuals_test)) / sd(residuals_test)  # Normalize residuals
+
+# Plot normalized residuals distribution
+ggplot(data.frame(Normalized_Residuals = normalized_residuals), aes(x = Normalized_Residuals)) +
+  geom_histogram(binwidth = 0.5, fill = "orange", color = "black") +
+  labs(title = "RF Residuals Distribution", 
+       x = "Normalized Residuals", 
+       y = "Frequency")
+```
+After tuning, the model was trained with 500 trees using the optimal mtry. The following evaluations were performed:
+
+The model identified the most significant predictors of car prices, such as price_dist, engine_size, and horsepower. A bar plot of feature importance was created to provide visual insights into the relative contributions of these features.
+
+The NMSE of the Random Forest model was calculated as 0.1884, demonstrating strong predictive performance and a substantial reduction in error compared to earlier iterations. An R-squared value of 0.7961 on the test data implies that nearly 79.61% of the variability in car prices is explained by the Random Forest model, indicating a high level of explanatory power. This performance suggests that the model effectively captures the relationships among features and provides reliable predictions.
+
+The residuals histogram shows that the residuals are largely centered around zero, with minimal skewness, indicating that the model captured most of the variance in the data without introducing significant bias. This confirms that the model is well-calibrated and robust against errors.
+
+The Random Forest model performed exceptionally well in predicting car prices, with a high r-square, low NMSE, and interpretable results. The insights gained from feature importance analysis can guide strategic decisions, such as identifying which features are most valuable in influencing pricing. This model demonstrates its robustness and ability to handle non-linear relationships and outliers effectively, making it a strong candidate for deployment in predictive tasks related to car pricing.
+
+
+#### Model 5: Neural network, where we used PCAed data and cluster directly
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=3.6, fig.height=2.8}
+if ("price" %in% colnames(combined_features)) {
+  combined_features <- combined_features[, !colnames(combined_features) %in% "price"]
+}
+data_for_model <- cbind(
+  pca_data,                         # PCA-transformed features
+  cluster = as.numeric(kmeans_pca$cluster),  # Cluster labels
+  combined_features,                # Original features (scaled + dummy-encoded)
+  price = data$price                # Target variable
+)
+
+# Step 1: Split data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(data_for_model$price, p = 0.8, list = FALSE)
+train_data <- data_for_model[train_index, ]
+test_data <- data_for_model[-train_index, ]
+
+# Step 2: Remove `price` from predictors and create `log_price`
+train_data$log_price <- log1p(train_data$price)  # log(1 + price)
+test_data$log_price <- log1p(test_data$price)
+
+train_data <- train_data[, !colnames(train_data) %in% "price"]  # Remove `price`
+test_data <- test_data[, !colnames(test_data) %in% "price"]    # Remove `price`
+
+# Step 3: Normalize numeric features
+normalize <- function(df, target_var) {
+  numeric_cols <- sapply(df, is.numeric)
+  numeric_cols[target_var] <- FALSE
+  df[, numeric_cols] <- scale(df[, numeric_cols])
+  return(df)
+}
+
+train_data_norm <- normalize(train_data, target_var = "log_price")
+test_data_norm <- normalize(test_data, target_var = "log_price")
+
+# Step 6: Define hyperparameter grid for neural network
+nn_grid <- expand.grid(
+    size =  c(5, 10, 20, 30),  # Hidden neurons
+    decay = c(0.001, 0.01, 0.1, 1, 0.5)  # Regularization parameters
+)
+
+# Step 5: Set up cross-validation
+nn_control <- trainControl(method = "cv", number = 5)
+
+
+# Step 6: Train the neural network model
+set.seed(123)
+nn_tuned <- train(
+    log_price ~ .,
+    data = train_data_norm,
+    method = "nnet",
+    trControl = nn_control,
+    tuneGrid = nn_grid,
+    linout = TRUE,
+    trace = FALSE,
+    maxit = 100
+)
+
+# Print the best parameters
+print(nn_tuned$bestTune)
+```
+In this model, we implemented a neural network to predict car prices. Neural networks are powerful tools for modeling complex, non-linear relationships between input features and the target variable. They are particularly useful for data with intricate interactions that may not be captured effectively by traditional models. We used features derived from principal component analysis (PCA) and clustering, combined with hyperparameter tuning, to optimize the performance of the model.
+
+To optimize the performance of the neural network model, hyperparameters such as the number of hidden neurons (size) and the regularization parameter (decay) were tuned. A grid search approach was implemented to explore values for size (5, 10, 20, 30) and decay (0.001, 0.01, 0.1, 0.5, 1). Five-fold cross-validation was performed to evaluate each combination of hyperparameters and select the best configuration that minimized the Mean Squared Error (MSE). The optimal values identified were size = 10 and decay = 0.5, ensuring that the model could balance complexity and generalization effectively.
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=3.6, fig.height=2.8}
+
+# Extract the best-tuned parameters
+best_size <- nn_tuned$bestTune$size
+best_decay <- nn_tuned$bestTune$decay
+
+# Step 7: Refit the neural network model with the best-tuned parameters
+set.seed(123)
+nn_best <- nnet(
+  log_price ~ ., 
+  data = train_data_norm, 
+  size = best_size, 
+  decay = best_decay, 
+  linout = TRUE, 
+  trace = FALSE, 
+  maxit = 100
+)
+
+# Step 8: Predictions on training and testing sets
+nn_predictions_train <- predict(nn_best, train_data_norm)
+nn_predictions_test <- predict(nn_best, test_data_norm)
+
+# Back-transform predictions and log_price to the original scale
+nn_predictions_train_exp <- expm1(nn_predictions_train)  # exp(log(1 + x)) - 1
+nn_predictions_test_exp <- expm1(nn_predictions_test)
+
+train_actual_price <- expm1(train_data$log_price)  # Back-transform log_price
+test_actual_price <- expm1(test_data$log_price)
+
+# Step 9: Calculate R-squared for Training and Testing Data
+# Training R-squared
+rss_train <- sum((train_actual_price - nn_predictions_train_exp)^2)
+tss_train <- sum((train_actual_price - mean(train_actual_price))^2)
+r_squared_train <- 1 - (rss_train / tss_train)
+
+# Testing R-squared
+rss_test <- sum((test_actual_price - nn_predictions_test_exp)^2)
+tss_test <- sum((test_actual_price - mean(test_actual_price))^2)
+r_squared_test <- 1 - (rss_test / tss_test)
+
+# Step 10: Calculate Normalized Mean Squared Error (NMSE) for Testing Data
+mean_test_price <- mean(test_actual_price)
+normalized_mse_test <- mean((test_actual_price - nn_predictions_test_exp)^2) / mean_test_price^2
+
+# Step 11: Output Results
+#cat("R-squared on Training Data:", r_squared_train, "\n")
+#cat("R-squared on Testing Data:", r_squared_test, "\n")
+#cat("Normalized MSE on Test Data:", normalized_mse_test, "\n")
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=3.6, fig.height=2.8}
+# Step 12: Visualizations
+# Predicted vs Actual Prices
+ggplot(data.frame(Actual = test_actual_price, Predicted = nn_predictions_test_exp), aes(x = Actual, y = Predicted)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed", size = 1) +
+  labs(title = "Neural Network: Predicted vs Actual Prices", 
+       x = "Actual Price", 
+       y = "Predicted Price")
+
+# Residuals Distribution
+nn_residuals_test <- test_actual_price - nn_predictions_test_exp
+normalized_nn_residuals_test <- (nn_residuals_test - mean(nn_residuals_test)) / sd(nn_residuals_test)
+
+ggplot(data.frame(Normalized_Residuals = normalized_nn_residuals_test), aes(x = Normalized_Residuals)) +
+  geom_histogram(binwidth = 0.5, fill = "green", color = "black") +
+  labs(title = "Neural Network Normalized Residuals Distribution", 
+       x = "Normalized Residuals", 
+       y = "Frequency")
+```
+The neural network model was optimized and evaluated using the normalized mean squared error (NMSE). The best-tuned model achieved a Normalized MSE of 0.2852, which indicates a moderate deviation of predicted prices from actual prices, relative to the variance in the data.However, the r-square values reveal distinct trends: a relatively low r-square of 0.3384 on the training data suggests underfitting, while a higher r-square of 0.6925 on the test data indicates reasonable generalization to unseen data. 
+
+The scatter plot of predicted vs. actual prices highlights the model's performance:
+Most data points are clustered near the diagonal reference line (red dashed line), indicating acceptable predictive accuracy for many cases.
+Noticeable deviations from the diagonal are observed for higher price ranges, where the model struggles to capture complex patterns. This suggests that the neural network underfits high-priced vehicles, failing to capture their underlying variability.
+
+The histogram of normalized residuals (errors scaled to unit variance) shows:
+Residuals are concentrated around 0, implying that predictions are generally close to actual prices for most instances.
+However, there is a slight right skew, with some residuals extending significantly beyond 5. This highlights that the model's predictions for certain high-priced vehicles deviate substantially from their true values.
+
+The model performs reasonably well for mid-range prices, as evidenced by the cluster of points near the diagonal in the predicted vs. actual plot. However, the underperformance for higher price ranges suggests that the neural network may not fully capture the complex interactions between predictors for those cases.
+
+# Open-Ended Question
+
+To estimate the original price of the cars in the dataset as if they were brand new, I would adopt a structured approach leveraging the dataset features and external data sources:
+
+#### 1. **Methodology**
+The first step involves utilizing the existing features in the dataset, such as brand, model year, mileage, fuel type, engine size, and transmission type, which serve as proxies for factors strongly correlated with the original price. I would incorporate the following steps:
+
+- **Depreciation Modeling**: 
+Analyze the relationship between current prices and depreciation factors like car age, mileage, and accident history. Depreciation typically follows a non-linear pattern, with the steepest decline in the first few years. A logarithmic or exponential depreciation model, informed by industry research, could approximate this relationship.
+
+- **External Data Integration**:
+Enrich the dataset with historical data on new car prices for specific brands, models, and years, sourced from online databases, manufacturer reports, or market research studies. These external data points would act as benchmarks for training a predictive model.
+
+- **Predictive Modeling**:
+Use a regression-based model to predict new car prices. A Random Forest regressor, which handles non-linearity and interactions effectively, is suitable for this task. The model would use features from the dataset as predictors, trained on the historical new price data.
+
+- **Extrapolation**:
+For cars lacking external benchmarks, extrapolate using the model trained on comparable vehicles, considering depreciation trends and feature similarities.
+
+#### 2. **Challenges and Limitations**
+- **Data Sparsity**: Older or less common models may lack sufficient historical price data, leading to less reliable predictions.
+- **Feature Representation**: Factors influencing original prices, such as optional packages, trim levels, and market-specific adjustments, might not be included in the dataset, causing bias.
+- **Extrapolation Risks**: The model might struggle to generalize accurately for new car prices based on data dominated by used cars.
+- **External Data Integration**: Ensuring consistency and completeness when merging external datasets is complex and time-consuming.
+
+#### 3. **Prediction**
+Using a Random Forest regression model, I estimated the original prices for three selected cars from the dataset, comparing predictions to their actual new prices:
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+# Prepare the dataset with the new top features
+data_top_features <- data[, c("price_dist", "engine_size", "horsepower", "milage", "model", "price")]
+
+# Encode the `model` variable as numeric
+data_top_features$model_encoded <- as.numeric(factor(data_top_features$model))
+
+# Convert categorical variables to factors
+data_top_features$price_dist <- as.factor(data_top_features$price_dist)
+
+# Split the data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(data_top_features$price, p = 0.8, list = FALSE)
+train_data <- data_top_features[train_index, ]
+test_data <- data_top_features[-train_index, ]
+
+# Train a Random Forest regression model
+set.seed(123)
+rf_model <- randomForest(
+  price ~ price_dist + engine_size + horsepower + milage + model_encoded,
+  data = train_data,
+  ntree = 500,
+  importance = TRUE
+)
+
+# Identify model codes for selected cars
+code_Q50_Hybrid_Sport <- which(levels(factor(data_top_features$model)) == "Q50 Hybrid Sport")
+code_Utility_Police <- which(levels(factor(data_top_features$model)) == "Utility Police Interceptor Base")
+code_S3 <- which(levels(factor(data_top_features$model)) == "S3 2.0T Premium Plus")
+
+# Selected cars
+selected_cars <- data.frame(
+  price_dist = factor(c("$12,000 - $21,999", "< $12,000", "$32,000 - $49,999"),
+                      levels = levels(data_top_features$price_dist)),
+  engine_size = c(3.5, 3.7, 2.0),
+  horsepower = c(354, 300, 292),
+  milage = c(0, 0, 0), # Hypothetical new car mileage
+  model_encoded = c(code_Q50_Hybrid_Sport, code_Utility_Police, code_S3)
+)
+
+# Predict prices for the selected cars as if they were new
+predicted_prices <- predict(rf_model, newdata = selected_cars)
+
+# Add original prices for comparison
+selected_cars$model <- c("Q50 Hybrid Sport", "Utility Police Interceptor Base", "S3 2.0T Premium Plus")
+selected_cars$predicted_price <- predicted_prices
+selected_cars$original_price <- c(44400, 29100, 51325) # Replace with actual new prices
+
+# Calculate discrepancies
+selected_cars$discrepancy <- selected_cars$original_price - selected_cars$predicted_price
+
+# Print the results
+print(selected_cars)
+```
+
+#### 4. **Discussion of Discrepancies**
+
+The discrepancies between the predicted prices and the original Manufacturer's Suggested Retail Price (MSRP) for the selected cars highlight several challenges in modeling car prices. In this case, all predicted prices were higher than the actual new car prices. This overestimation can be attributed to the following factors:
+
+- **Feature Representation**: 
+The dataset might lack critical details such as trim levels, optional packages, and regional pricing adjustments, which can significantly influence the original price. For example, higher trims or optional luxury features could lead to inaccurate predictions if these factors are not explicitly represented.
+  
+- **Data Quality**:
+Insufficient representation of specific car models, particularly rare or high-end vehicles, in the dataset can lead to biased predictions. The lack of comprehensive data for older or less common models makes extrapolation more error-prone.
+
+- **Model Assumptions**:
+The Random Forest model, while effective for many applications, may not capture the distinct dynamics of new car pricing. Extrapolation from used car prices, which are influenced by depreciation, may result in systematic errors.
+
+- **Depreciation Curve**:
+Real-world depreciation trends vary widely across brands, models, and market conditions. Assumptions about these trends, even if based on general industry standards, may not apply universally, leading to deviations in predicted prices.
+
+
+\newpage
+
+# Supplementary Sections
+## Histogram
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=3.6, fig.height=2.5}
+price_threshold <- quantile(data$price, 0.95, na.rm = TRUE)
+filtered_data <- subset(data, price <= price_threshold)
+ggplot(filtered_data, aes(x = price)) +
+  geom_histogram(binwidth = 5000, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Price (Below 95th Percentile)",
+       x = "Price (USD)",
+       y = "Frequency") +
+  theme_minimal()
+
+
+ggplot(data, aes(x = model_year)) +
+  geom_bar(fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Model Year",
+       x = "Model Year",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
+
+ggplot(data, aes(x = milage)) +
+  geom_histogram(binwidth = 10000, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Mileage",
+       x = "Mileage (miles)",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+
+## Frequency table
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+freq_tables <- lapply(data[categorical_vars], table)
+names(freq_tables) <- categorical_vars
+
+# Print frequency tables
+freq_tables
+```
+
+## Boxplots
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=7, fig.height=7}
+max_price <- 100000
+
+# Creating individual boxplots with restricted y-axis range
+p1 <- ggplot(data, aes(x = fuel_type, y = price)) +
+  geom_boxplot(fill = "skyblue") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Fuel Type vs. Price", x = "Fuel Type", y = "Price")
+
+p2 <- ggplot(data, aes(x = cylinder_arrangement, y = price)) +
+  geom_boxplot(fill = "lightgreen") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Cylinder Arrangement vs. Price", x = "Cylinder Arrangement", y = "Price")
+
+p3 <- ggplot(data, aes(x = transmission, y = price)) +
+  geom_boxplot(fill = "coral") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Transmission vs. Price", x = "Transmission", y = "Price")
+
+p4 <- ggplot(data, aes(x = ext_col, y = price)) +
+  geom_boxplot(fill = "lightpink") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Exterior Color vs. Price", x = "Exterior Color", y = "Price")
+
+p5 <- ggplot(data, aes(x = int_col, y = price)) +
+  geom_boxplot(fill = "lightsalmon") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Interior Color vs. Price", x = "Interior Color", y = "Price")
+
+p6 <- ggplot(data, aes(x = brand, y = price)) +
+  geom_boxplot(fill = "lightskyblue") +
+  coord_cartesian(ylim = c(0, max_price)) + # Limit y-axis to zoom in
+  theme_minimal() +
+  labs(title = "Brand vs. Price", x = "Brand", y = "Price")
+
+# Arrange plots into a grid
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 2)
+```
+
+## Correlation Heatmap
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=7, fig.height=7}
+# Select only numeric columns from the data
+numeric_data <- data[sapply(data, is.numeric)]
+
+# Calculate the correlation matrix using only the numeric columns
+correlation_matrix <- cor(numeric_data, use = "complete.obs")
+
+# Melt the correlation matrix for use in ggplot2
+correlation_melted <- melt(correlation_matrix)
+
+# Plot the heatmap using ggplot2 with correlation values labeled
+ggplot(data = correlation_melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(value, 2)), size = 4) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name = "Correlation") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 10, hjust = 1)) +
+  coord_fixed() +
+  labs(title = "Correlation Heatmap")
+
+```
+
+## Unsupervised Learning 
+
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=3.9, fig.height=3.5}
+plot(explained_variance, type = "b", 
+     xlab = "Number of Principal Components", 
+     ylab = "Cumulative Explained Variance", 
+     main = "Explained Variance by Principal Components")
+
+#Select first 2 components for clustering
+pca_data <- as.data.frame(pca_result$x[, 1:2])
+
+#Step 3: Determine Optimal Number of Clusters for K-Means
+#3.1 Silhouette Method
+sil_scores <- numeric()
+for (k in 2:10) {
+  set.seed(123)
+  kmeans_result <- stats::kmeans(pca_data, centers = k, nstart = 25)
+  sil_scores[k] <- mean(silhouette(kmeans_result$cluster, dist(pca_data))[, 3])
+}
+plot(2:10, sil_scores[2:10], type = "b", pch = 19,
+     xlab = "Number of Clusters", 
+     ylab = "Average Silhouette Width", 
+     main = "Silhouette Method for Optimal Clusters")
+
+#Use the best number of clusters (e.g., from Silhouette Method or Elbow)
+optimal_clusters <- which.max(sil_scores)
+```
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=5, fig.height=4}
+#Step 4: Apply K-means Clustering with Optimal Number of Clusters
+set.seed(123)
+kmeans_pca <- stats::kmeans(pca_data, centers = optimal_clusters, nstart = 25)
+
+#Add cluster labels to original data
+combined_features$pca_cluster <- as.factor(kmeans_pca$cluster)
+
+#Visualize clustering in PCA space
+plot(pca_data$PC1, pca_data$PC2, 
+     col = kmeans_pca$cluster, 
+     pch = 19, 
+     xlab = "Principal Component 1", 
+     ylab = "Principal Component 2", 
+     main = paste("K-Means Clustering with", optimal_clusters, "Clusters"))
+
+
+kmeans_silhouette <- silhouette(kmeans_pca$cluster, dist(pca_data))
+mean_kmeans_silhouette <- mean(kmeans_silhouette[, 3])
+print(paste("Mean Silhouette Score for K-Means Clustering:", mean_kmeans_silhouette))
+```
+
+## Prediction Models
+Summary of GBM
+```{r, echo=FALSE, message = FALSE, warning=FALSE, fig.width=7, fig.height=6}
+summary(gbm_model)
+```

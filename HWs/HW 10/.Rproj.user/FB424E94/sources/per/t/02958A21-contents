@@ -1,0 +1,838 @@
+---
+title: "detail explanation"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## The problem
+Match $m$ controls to each treat unit, minimizing the total distance between matched pairs and subject to conditions specified.
+
+Notations used: \
+$a_{t,c}$: the decision variable of whether treat t and control c are matched \
+$d_{t,c}$: the distance between treat t and control c (Mahalanobis or propensity score) \
+$\overline {cov_j(T)}$: the group mean of covariate j, of treat units \
+$\overline {cov_j(C)}$: the group mean of covariate j, of matched control units \
+$\sigma_j$: the tolerance of mean difference of covariate j \
+$\overline {cov_j(T)^k}$: mean of kth moment of covariate j, of treat units \
+$\overline {cov_j(C)^k}$: mean of kth moment of covariate j, of matched control units \
+$\delta_j$: the tolerance of higher order moment difference of covariate j 
+
+
+$$
+\begin{aligned}
+    \underset{a}{\text{Minimize}} \quad & \sum_t \sum_c a_{t,c} d_{t,c} \\
+    \text{subject to} \quad & \sum_c a_{t,c} = m \\
+                             & \sum_t a_{t,c} \leq 1 \\
+                             & \overline {cov_j(T)} - \overline {cov_j(C)} \leq \sigma_j \\
+                             & \overline {cov_j(T)^k} - \overline {cov_j(C)^k} \leq \delta_j
+\end{aligned}
+$$
+
+
+
+
+
+## function: mip_matching
+Notations used: \
+$a_{t,c}$ the decision variable of treat t and control c; 1 means treat t is    matched with control c, 0 otherwise.
+\bigskip
+
+**load libararies as described**
+```{r eval=FALSE, include=TRUE}
+library(gurobi) #gurobi optimizer
+library(MASS)  # For computing Mahalanobis distance
+library(stats)  # For fitting logistic regression model to compute propensity scores
+```
+\bigskip
+
+
+
+
+**Function input variables: **
+
+
+  1. treated units: number of treated units 
+  2. control_units: number of control units 
+  3. treated_covariates: the matrix of treated covariates 
+  4. control_covariates: the matrix of control covariates 
+  5. distance_method: "mahalanobis" or propensity"; default = "mahalanobis" 
+  6. m: the number of control units matched to each treat unit; default = 1 
+  7. sigma: the vector of tolerances of mean difference; default = "NULL" 
+  8. mom_num: number of higher moment; deafult = 2 
+  9. mom_tol: the vector of tolerances of moment difference; default = "NULL"
+  
+```{r eval=FALSE, include=TRUE}
+mip_matching <- function(treated_units, control_units, treated_covariates, control_covariates, distance_method = "mahalanobis", m = 1, sigma = NULL, mom_num = 2, mom_tol = NULL) {
+```
+\bigskip
+
+
+
+**Check if m is valid **
+m cannot exceed floor(# of controls / # of treats)
+```{r eval=FALSE, include=TRUE}
+#check if m is valid
+  m_max = floor(control_units / treated_units)
+  if (m > m_max) {
+    return(cat("m is invalid. Maximum value of m is", m_max))
+  }
+```
+\bigskip
+
+
+
+**Calculate the distance matrix **
+Use either "mahalanobis" or "propensity".
+```{r eval=FALSE, include=TRUE}
+# Calculate distance matrix
+  if (distance_method == "mahalanobis") {
+    # 1. Using Mahalanobis Distance
+    combined_covariates <- rbind(treated_covariates, control_covariates)
+    cov_matrix <- cov(combined_covariates)  # Compute covariance matrix
+    dist <- matrix(0, nrow = treated_units, ncol = control_units)
+    for (i in 1:treated_units) {
+      for (j in 1:control_units) {
+        dist[i, j] <- mahalanobis(treated_covariates[i, ], control_covariates[j, ], cov_matrix)
+      }
+    }
+  } else if (distance_method == "propensity") {
+    # 2. Using Propensity Score Distance
+    # Create a data frame for fitting the logistic regression model
+    combined_data <- data.frame(rbind(treated_covariates, control_covariates))
+    combined_data$treatment <- c(rep(1, treated_units), rep(0, control_units))
+    
+    # Fit a logistic regression model to calculate propensity scores
+    propensity_model <- glm(treatment ~ ., data = combined_data, family = binomial())
+    propensity_scores <- predict(propensity_model, type = "response")
+    
+    # Separate propensity scores for treated and control units
+    treated_scores <- propensity_scores[1:treated_units]
+    control_scores <- propensity_scores[(treated_units + 1):(treated_units + control_units)]
+    
+    # Calculate the absolute difference in propensity scores as the distance
+    dist <- outer(treated_scores, control_scores, FUN = function(x, y) abs(x - y))
+  } else {
+    stop("Invalid distance method. Choose either 'mahalanobis' or 'propensity'.")
+  }
+```
+\bigskip
+
+
+
+**Initialize a Gurobi optimization model**
+```{r eval=FALSE, include=TRUE}
+# Model setup
+  model <- list()
+```
+\bigskip
+
+
+
+**Setting the objective function **
+We aim to minimize the total distance of all matched pairs. \
+We applied t() to dist because we want the flattened vector of the distance     matrix to be formulated row by row (treat by treat).
+```{r eval=FALSE, include=TRUE}
+# Objective function: Minimize total distance
+  model$obj <- as.vector(t(dist))
+```
+\bigskip
+
+
+
+
+**Setting the constraint: [each treated unit matched to m control units] **
+We add a matrix with to model$A: 
+
+
+  1. number of rows = number of treats, since each row represents a constraint for one treat; for example, row 1 multiplies the decision vector gives the   number of controls matched with treat 1: $\sum_c a_{1,c}$, which should be    equal to $m$.
+  2. number of columns = number of treats * number of controls, which is the  total number of decision variables. 
+  
+  
+Inside this matrix, for row j assign "1" to all $a_{j,c}$.
+```{r eval=FALSE, include=TRUE}
+# Constraint 1.2: Each treated unit must be matched to m control units
+  model$A <- matrix(0, nrow = treated_units, ncol = treated_units * control_units)
+  for (i in 1:treated_units) {
+    model$A[i, seq((i - 1)*control_units+1, i*control_units)] <- 1
+  }
+  model$sense <- rep("=", treated_units)
+  model$rhs <- rep(m, treated_units) 
+```
+\bigskip
+
+
+
+
+**Setting the constraint: [each control unit used at most once] **
+Similarly, we add a matrix with to model$A: 
+
+
+  1. number of rows = number of controls, since each row is checking one control; for example, row 1 multiplies the decision vector gives the number of matches that control 1 has: $\sum_t a_{t,1}$, which should $\leq1$.
+  2. number of columns = number of treats * number of controls, which is the  total number of decision variables.
+  
+  
+Inside this matrix, for row j assign "1" to all $a_{t,j}$.
+```{r eval=FALSE, include=TRUE}
+# Constraint 1.3: Each control unit can be used at most once
+  control_constraint = matrix(0, nrow = control_units, ncol = treated_units * control_units)
+  for (j in 1:control_units) {
+    control_constraint[seq(j, treated_units * control_units, by = control_units)] = 1
+  }
+  model$A = rbind(model$A, control_constraint)
+  model$sense <- c(model$sense, rep("<=", control_units))
+  model$rhs <- c(model$rhs, rep(1, control_units))
+```
+\bigskip
+
+
+
+
+**Setting the constraint: [mean difference of each covariate <= sigma[j]] **
+Each constraint of a covariate is represented as 2 row vectors. 
+
+
+  1. total number of row vectors added = 2 * number of covariates specified
+  2. number of columns = number of treats * number of controls, which is the         total number of decision variables.
+  
+  
+For example, row 1 and row 2 corresponds to constraint for covariate 1. The coefficients in row 1 and 2 are the same: $cov_1(t) - cov_1(c)$. Both rows multiply the decision vector give $m\sum_t cov_1(t) - \sum_c cov_1(c)$; in order to get mean difference, we need to divide it by (m * number of treats), and also to account for the absolute sign, the 2 rhs for row 1 and row 2 are $\leq sigma[1]*m*treat_{num}$ and $\geq -sigma[1]*m*treat_{num}$.             
+```{r eval=FALSE, include=TRUE}
+# Constraint 1.5: mean difference of each covariate should be <= sigma[j]
+  num_covariates <- length(sigma)
+  for (j in 1:num_covariates) {
+    mean_diff = matrix(0, nrow = 2, ncol = treated_units * control_units)
+    for (i in 1:treated_units) {
+      for (k in 1:control_units) {
+        mean_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j] - control_covariates[k, j]
+      }
+    }
+    model$A <- rbind(model$A, mean_diff)
+    model$sense <- c(model$sense, "<=", ">=")
+    model$rhs <- c(model$rhs, sigma[j] * (m*treated_units), -sigma[j] * (m*treated_units))
+  }
+```
+\bigskip
+
+
+
+**Setting the constraint: [higher moment differences of each covariate <= mom_tol[j]] **
+Same as constraining [mean difference], except the coefficients become $(cov_1(t))^2 - (cov_1(c))^2$.
+```{r eval=FALSE, include=TRUE}
+# Constraint 1.6: higher moment differences of each covariate <= mom_tol[j]
+  for (j in 1:num_covariates) {
+    mom_diff = matrix(0, nrow = 2, ncol = treated_units * control_units)
+    for (i in 1:treated_units) {
+      for (k in 1:control_units) {
+        mom_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j]^mom_num - control_covariates[k, j]^mom_num
+      }
+    }
+    model$A <- rbind(model$A, mom_diff)
+    model$sense <- c(model$sense, "<=", ">=")
+    model$rhs <- c(model$rhs, mom_tol[j] * (m*treated_units), -mom_tol[j] * (m*treated_units))
+  }
+```
+\bigskip
+
+
+
+**Specify variable type to be Binary**
+```{r eval=FALSE, include=TRUE}
+# Variable types 1.4: Binary (0 or 1)
+  model$vtype <- rep("B", treated_units * control_units)
+```
+\bigskip
+
+
+
+**Solve and modify return values for better interpretability**
+The function returns a list containing:
+
+
+1. true of false message indicating whether the matching succeeded
+2. a matrix "matching_matrix", with 1 representing a match, 0 otherwise
+3. a dataframe "matched_pairs", listing all the pairs of match
+```{r eval=FALSE, include=TRUE}
+  # Solve the MIP using Gurobi
+  params <- list(OutputFlag = 0)  # Suppress Gurobi output
+  result <- gurobi(model, params = params)
+  #print(result)
+  
+  # Check if a feasible solution was found
+  if (!is.null(result$x)) {
+    # Reshape the solution into a matching matrix
+    matching_matrix <- matrix(result$x, nrow = treated_units, ncol = control_units, byrow = TRUE)
+    
+    #Reshape into match pairs
+    pos_of_1 = which(matching_matrix==1, arr.ind = TRUE)
+    matched_pairs = pos_of_1[order(pos_of_1[ ,1]), ]
+    matched_pairs[ ,2]=matched_pairs[ ,2] + treated_units
+    matched_pairs = as.data.frame(matched_pairs)
+    colnames(matched_pairs) = c("treat_index","control_index")
+    
+    
+    return(list(success = TRUE, matching_matrix = matching_matrix, matched_pairs = matched_pairs))
+  } else {
+    return(list(success = FALSE, message = "No feasible solution found"))
+  }
+}
+```
+\bigskip
+
+
+
+
+## function: mip_matching2
+mip_matching2 adds group mean difference tolerance as additional continuous variables, and also includes it in the objective function. \
+The new object function: $\text{min}( \sum_{t,c}d_{t,c}a_{t,c} + \lambda \sum_j \sigma_j)$ ($\lambda$ is the weight for mean difference penalty).
+
+
+1. Constraint 1.6 is deleted.
+2. For constraint 1.2 and 1.3, since these conditions are not related to sigma, simply extend the input vectors with "num_cov" number of 0s at the end.
+3. For constraint 1.5, since now sigmas are included as variables, they need to be moved to the left of the equation. So now the 2 lines of constraints for each covariate j becomes $m\sum_t cov_1(t) - \sum_c cov_1(c) - \sigma_j*m*treat_{num} \leq  0$ and $m\sum_t cov_1(t) - \sum_c cov_1(c) + \sigma_j*m*treat_{num} \geq  0$.
+4. For 1.4 variable type, we add "num_cov" number of "C" as continous variables after the binary decision variables.
+```{r eval=FALSE, include=TRUE}
+mip_matching2 = function(treated_units, control_units, treated_covariates, control_covariates, distance_method = "mahalanobis", m = 1, weight = 1) {
+  
+  #check if m is valid
+  m_max = floor(control_units / treated_units)
+  if (m > m_max) {
+    return(cat("m is invalid. Maximum value of m is", m_max))
+  }
+  
+  
+  # Calculate distance matrix
+  if (distance_method == "mahalanobis") {
+    # 1. Using Mahalanobis Distance
+    combined_covariates <- rbind(treated_covariates, control_covariates)
+    cov_matrix <- cov(combined_covariates)  # Compute covariance matrix
+    dist <- matrix(0, nrow = treated_units, ncol = control_units)
+    for (i in 1:treated_units) {
+      for (j in 1:control_units) {
+        dist[i, j] <- mahalanobis(treated_covariates[i, ], control_covariates[j, ], cov_matrix)
+      }
+    }
+  } else if (distance_method == "propensity") {
+    # 2. Using Propensity Score Distance
+    # Create a data frame for fitting the logistic regression model
+    combined_data <- data.frame(rbind(treated_covariates, control_covariates))
+    combined_data$treatment <- c(rep(1, treated_units), rep(0, control_units))
+    
+    # Fit a logistic regression model to calculate propensity scores
+    propensity_model <- glm(treatment ~ ., data = combined_data, family = binomial())
+    propensity_scores <- predict(propensity_model, type = "response")
+    
+    # Separate propensity scores for treated and control units
+    treated_scores <- propensity_scores[1:treated_units]
+    control_scores <- propensity_scores[(treated_units + 1):(treated_units + control_units)]
+    
+    # Calculate the absolute difference in propensity scores as the distance
+    dist <- outer(treated_scores, control_scores, FUN = function(x, y) abs(x - y))
+  } else {
+    stop("Invalid distance method. Choose either 'mahalanobis' or 'propensity'.")
+  }
+  #print(dist)
+  
+  
+  # Model setup
+  model <- list()
+  
+  
+  # Objective function: Minimize total distance + mean difference between groups
+  num_cov = ncol(treated_covariates)
+  model$obj <- c(as.vector(t(dist)), rep(weight, num_cov))
+  
+  
+  # Constraint 1.2: Each treated unit must be matched to m control units
+  model$A <- matrix(0, nrow = treated_units, 
+                    ncol = treated_units*control_units + num_cov)
+  for (i in 1:treated_units) {
+    model$A[i, seq((i - 1)*control_units+1, i*control_units)] <- 1
+  }
+  model$sense <- rep("=", treated_units)
+  model$rhs <- rep(m, treated_units)  
+  
+  
+  # Constraint 1.3: Each control unit can be used at most once
+  control_constraint = matrix(0, nrow = control_units, 
+                              ncol = treated_units*control_units + num_cov)
+  for (j in 1:control_units) {
+    control_constraint[j, seq(j, treated_units * control_units, by = control_units)] = 1
+  }
+  model$A = rbind(model$A, control_constraint)
+  model$sense <- c(model$sense, rep("<=", control_units))
+  model$rhs <- c(model$rhs, rep(1, control_units))
+  
+  # Constraint 1.5: mean difference of each covariate should be <= sigma[j]
+  for (j in 1:num_cov) {
+    mean_diff = matrix(0, nrow = 2, 
+                       ncol = treated_units*control_units + num_cov)
+    mean_diff[1, treated_units*control_units + j] = -m*treated_units
+    mean_diff[2, treated_units*control_units + j] = m*treated_units
+    for (i in 1:treated_units) {
+      for (k in 1:control_units) {
+        mean_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j] - control_covariates[k, j]
+      }
+    }
+    model$A <- rbind(model$A, mean_diff)
+    model$sense <- c(model$sense, "<=", ">=")
+    model$rhs <- c(model$rhs, 0, 0)
+  }
+  
+  
+  
+  
+  # Variable types 1.4: Binary (0 or 1) for decision variable, continous for epsilon
+  model$vtype <- c(rep("B", treated_units * control_units), rep("C", num_cov))
+  
+  
+  # Solve the MIP using Gurobi
+  params <- list(OutputFlag = 0)  # Suppress Gurobi output
+  result <- gurobi(model, params = params)
+  #print(result)
+  
+  # Check if a feasible solution was found
+  if (!is.null(result$x)) {
+    # Reshape the solution into a matching matrix
+    matching_matrix <- matrix(result$x[1:(treated_units*control_units)], nrow = treated_units, ncol = control_units, byrow = TRUE)
+    sigmas = result$x[(treated_units*control_units+1):length(result$x)]
+    
+    #Reshape into match pairs
+    pos_of_1 = which(matching_matrix==1, arr.ind = TRUE)
+    matched_pairs = pos_of_1[order(pos_of_1[ ,1]), ]
+    matched_pairs[ ,2]=matched_pairs[ ,2] + treated_units
+    matched_pairs = as.data.frame(matched_pairs)
+    colnames(matched_pairs) = c("treat_index","control_index")
+    
+    
+    return(list(success = TRUE, matching_matrix = matching_matrix, matched_pairs = matched_pairs, sigmas = sigmas))
+  } else {
+    return(list(success = FALSE, message = "No feasible solution found"))
+  }
+}
+```
+
+
+
+
+
+
+## function: mip_matching3
+mip_matching3 adds forbidden_pairs, but neither consider sigmas as additional continuous variables nor add it to objective function.\
+The object function is same to the one in mip_matching: $\text{min}( \sum_{t,c}d_{t,c}a_{t,c})$, but the constraints are different.
+
+
+1. Create a mask `valid_pairs` to identify valid pair, and flatten the distance matrix and mask to include only valid pairs.
+2. For constraint 1.2 ~ 1.6, change the value of `ncol` from `treated_units * control_units` to `num_valid_pairs`, which number of valid pairs after removing forbidden pairs.
+3. Transfer the model excluding the forbidden pairs to gurobi, and reshape the output to matching matrix with size `treated_units * control_units` using valid_pairs.
+
+```{r eval=FALSE, include=TRUE}
+mip_matching3 <- function(treated_units, control_units, treated_covariates, control_covariates, distance_method = "mahalanobis", m = 1, sigma = NULL, mom_num = 2, mom_tol = NULL, forbidden_pairs = NULL) {
+  
+  #check if m is valid
+  m_max = floor(control_units / treated_units)
+  if (m > m_max) {
+    return(cat("m is invalid. Maximum value of m is", m_max, "\n"))
+  }
+  
+  
+  # Calculate distance matrix
+  if (distance_method == "mahalanobis") {
+    # 1. Using Mahalanobis Distance
+    combined_covariates <- rbind(treated_covariates, control_covariates)
+    cov_matrix <- cov(combined_covariates)  # Compute covariance matrix
+    dist <- matrix(0, nrow = treated_units, ncol = control_units)
+    for (i in 1:treated_units) {
+      for (j in 1:control_units) {
+        dist[i, j] <- mahalanobis(treated_covariates[i, ], control_covariates[j, ], cov_matrix)
+      }
+    }
+  } else if (distance_method == "propensity") {
+    # 2. Using Propensity Score Distance
+    # Create a data frame for fitting the logistic regression model
+    combined_data <- data.frame(rbind(treated_covariates, control_covariates))
+    combined_data$treatment <- c(rep(1, treated_units), rep(0, control_units))
+    
+    # Fit a logistic regression model to calculate propensity scores
+    propensity_model <- glm(treatment ~ ., data = combined_data, family = binomial())
+    propensity_scores <- predict(propensity_model, type = "response")
+    
+    # Separate propensity scores for treated and control units
+    treated_scores <- propensity_scores[1:treated_units]
+    control_scores <- propensity_scores[(treated_units + 1):(treated_units + control_units)]
+    
+    # Calculate the absolute difference in propensity scores as the distance
+    dist <- outer(treated_scores, control_scores, FUN = function(x, y) abs(x - y))
+  } else {
+    stop("Invalid distance method. Choose either 'mahalanobis' or 'propensity'.")
+  }
+ 
+  # Adjust for forbidden pairs: Create a mask to identify valid pairs
+  valid_pairs <- matrix(TRUE, nrow = treated_units, ncol = control_units)
+  if (!is.null(forbidden_pairs)) {
+    for (pair in forbidden_pairs) {
+      i <- pair[1]  # Treated unit index
+      j <- pair[2]  # Control unit index
+      valid_pairs[i, j] <- FALSE  # Mark this pair as forbidden
+    }
+  }
+  # Flatten the distance matrix and mask to include only valid pairs
+  valid_indices <- which(valid_pairs, arr.ind = TRUE)
+  valid_indices = valid_indices[order(valid_indices[, 1]), ]
+  valid_dist <- dist[valid_pairs]
+  num_valid_pairs <- nrow(valid_indices)
+
+  
+  # Model setup
+  model <- list()
+  
+  
+  # Objective function: Minimize total distance
+  model$obj <- as.vector(t(valid_dist))
+
+  
+  # Constraint 1.2: Each treated unit must be matched to m control units
+  model$A <- matrix(0, nrow = treated_units, ncol = num_valid_pairs)
+  for (i in 1:treated_units) {
+    valid_for_treated_i <- which(valid_indices[, 1] == i)
+    model$A[i, valid_for_treated_i] <- 1
+  }
+  model$sense <- rep("=", treated_units)
+  model$rhs <- rep(m, treated_units)
+  
+  
+  # Constraint 1.3: Each control unit can be used at most once
+  control_constraint <- matrix(0, nrow = control_units, 
+                               ncol = num_valid_pairs)
+
+  for (j in 1:control_units) {
+    valid_for_control_j <- which(valid_indices[, 2] == j)
+    control_constraint[j, valid_for_control_j] = 1  # Ensure each control is used at most once
+  }
+  
+  model$A <- rbind(model$A, control_constraint)
+  model$sense <- c(model$sense, rep("<=", control_units))
+  model$rhs <- c(model$rhs, rep(1, control_units))  # At most 1 match per control unit
+  
+  # Debugging: print the control constraint to verify correct setup
+  #print("Control constraint matrix:", control_constraint)
+ 
+  
+  # Constraint 1.5: mean difference of each covariate should be <= sigma[j]
+  if (!is.null(sigma)) {
+    num_covariates <- length(sigma)
+    for (j in 1:num_covariates) {
+      mean_diff = matrix(0, nrow = 2, ncol = treated_units * control_units)
+      for (i in 1:treated_units) {
+        for (k in 1:control_units) {
+          mean_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j] - control_covariates[k, j]
+        }
+      }
+      model$A <- rbind(model$A, mean_diff)
+      model$sense <- c(model$sense, "<=", ">=")
+      model$rhs <- c(model$rhs, sigma[j] * (m*treated_units), -sigma[j] * (m*treated_units))
+    }
+  }
+  
+  
+  
+  # Constraint 1.6: higher moment differences of each covariate <= mom_tol[j]
+  if (!is.null(mom_tol)) {
+    num_covariates <- length(sigma)
+    for (j in 1:num_covariates) {
+      mom_diff = matrix(0, nrow = 2, ncol = treated_units * control_units)
+      for (i in 1:treated_units) {
+        for (k in 1:control_units) {
+          mom_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j]^mom_num - control_covariates[k, j]^mom_num
+        }
+      }
+      model$A <- rbind(model$A, mom_diff)
+      model$sense <- c(model$sense, "<=", ">=")
+      model$rhs <- c(model$rhs, mom_tol[j] * (m*treated_units), -mom_tol[j] * (m*treated_units))
+    }
+  }
+  
+  
+  
+  # Variable types 1.4: Binary (0 or 1)
+  model$vtype <- rep("B", num_valid_pairs)
+  
+  
+  # Solve the MIP using Gurobi
+  params <- list(OutputFlag = 0)  
+  result <- gurobi(model, params = params)
+  print(result)
+  
+  # Check if a feasible solution was found
+  if (!is.null(result$x)) {
+    matching_matrix <- matrix(0, nrow = treated_units, ncol = control_units)
+    
+    t_matching_matrix = t(matching_matrix)
+    t_valid_pairs = t(valid_pairs)
+    t_matching_matrix[t_valid_pairs] = result$x
+    
+    matching_matrix = t(t_matching_matrix)
+    
+    # Extract the positions of the matches (where matching_matrix == 1)
+    pos_of_1 <- which(matching_matrix == 1, arr.ind = TRUE)
+    
+    # Sort the matched pairs by treated unit index
+    matched_pairs <- pos_of_1[order(pos_of_1[, 1]), ]
+    matched_pairs[ ,2]=matched_pairs[ ,2] + treated_units
+    matched_pairs = as.data.frame(matched_pairs)
+    colnames(matched_pairs) <- c("treat_index", "control_index")
+    
+    return(list(success = TRUE, matching_matrix = matching_matrix, matched_pairs = matched_pairs))
+  } else {
+    return(list(success = FALSE, message = "No feasible solution found"))
+  }
+}
+```
+
+
+
+
+
+## function: mip_matching_grade
+Grade edges based on difference of propensity score (default: [0.1, 0.5, 0.7]) \
+Add penalty to worse grades (penalty grade increases exponentially, with edges satisfying the first threshold have penalty 0, and after that each group i of edges have penalty (1+p[i-1])*rho, where rho = treated_unit+sum(dist)) 
+```{r eval=FALSE, include=TRUE}
+mip_matching_grade <- function(treated_units, control_units, treated_covariates, control_covariates, distance_method = "propensity", grade = c(0.1, 0.5, 0.7), m = 1, sigma = NULL, mom_num = 2, mom_tol = NULL) {
+  
+  #check if m is valid
+  m_max = floor(control_units / treated_units)
+  if (m > m_max) {
+    return(cat("m is invalid. Maximum value of m is", m_max, "\n"))
+  }
+  
+  
+  # Calculate distance matrix
+  if (distance_method == "mahalanobis") {
+    # 1. Using Mahalanobis Distance
+    combined_covariates <- rbind(treated_covariates, control_covariates)
+    cov_matrix <- cov(combined_covariates)  # Compute covariance matrix
+    dist <- matrix(0, nrow = treated_units, ncol = control_units)
+    for (i in 1:treated_units) {
+      for (j in 1:control_units) {
+        dist[i, j] <- mahalanobis(treated_covariates[i, ], control_covariates[j, ], cov_matrix)
+      }
+    }
+  } else if (distance_method == "propensity") {
+    # 2. Using Propensity Score Distance
+    # Create a data frame for fitting the logistic regression model
+    combined_data <- data.frame(rbind(treated_covariates, control_covariates))
+    combined_data$treatment <- c(rep(1, treated_units), rep(0, control_units))
+    
+    # Fit a logistic regression model to calculate propensity scores
+    propensity_model <- glm(treatment ~ ., data = combined_data, family = binomial())
+    propensity_scores <- predict(propensity_model, type = "response")
+    
+    # Separate propensity scores for treated and control units
+    treated_scores <- propensity_scores[1:treated_units]
+    control_scores <- propensity_scores[(treated_units + 1):(treated_units + control_units)]
+    
+    # Calculate the absolute difference in propensity scores as the distance
+    dist <- outer(treated_scores, control_scores, FUN = function(x, y) abs(x - y))
+  } else {
+    stop("Invalid distance method. Choose either 'mahalanobis' or 'propensity'.")
+  }
+  print(dist)
+  
+  
+  # Model setup
+  model <- list()
+  
+  
+  # Objective function: Minimize total distance
+  dist_obj = as.vector(t(dist))
+  rho = max(treated_units + sum(dist), 1e6)
+  
+  penalty_coef = numeric(length(grade)+1)
+  for (i in 2:length(penalty_coef)) {
+    penalty_coef[i] = (1 + penalty_coef[i-1]) * rho
+  }
+  cat("penalty_coef:", "\n")
+  print(penalty_coef)
+  
+  penalty_vec = rep(penalty_coef[length(penalty_coef)], length(dist_obj))
+  for (i in 1:length(grade)) {
+    if (i == 1) {
+      penalty_vec[dist_obj <= grade[i]] = penalty_coef[i]
+    } else {
+      penalty_vec[dist_obj>=grade[i-1] & dist_obj<=grade[i]] = penalty_coef[i]
+    }
+  }
+  cat("penalty_vec:", "\n")
+  print(penalty_vec)
+  
+  model$obj <- dist_obj + penalty_vec
+  cat("obj:", "\n")
+  print(model$obj)
+  
+  
+  # Constraint 1.2: Each treated unit must be matched to m control units
+  model$A <- matrix(0, nrow = treated_units, ncol = treated_units * control_units)
+  for (i in 1:treated_units) {
+    model$A[i, seq((i - 1)*control_units+1, i*control_units)] <- 1
+  }
+  model$sense <- rep("=", treated_units)
+  model$rhs <- rep(m, treated_units)  
+  
+  
+  # Constraint 1.3: Each control unit can be used at most once
+  control_constraint = matrix(0, nrow = control_units, ncol = treated_units * control_units)
+  for (j in 1:control_units) {
+    control_constraint[j, seq(j, treated_units * control_units, by = control_units)] = 1
+  }
+  model$A = rbind(model$A, control_constraint)
+  model$sense <- c(model$sense, rep("<=", control_units))
+  model$rhs <- c(model$rhs, rep(1, control_units))
+  
+  # Constraint 1.5: mean difference of each covariate should be <= sigma[j]
+  if (!is.null(sigma)) {
+    num_covariates <- length(sigma)
+    for (j in 1:num_covariates) {
+      mean_diff = matrix(0, nrow = 2, ncol = treated_units * control_units)
+      for (i in 1:treated_units) {
+        for (k in 1:control_units) {
+          mean_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j] - control_covariates[k, j]
+        }
+      }
+      model$A <- rbind(model$A, mean_diff)
+      model$sense <- c(model$sense, "<=", ">=")
+      model$rhs <- c(model$rhs, sigma[j] * (m*treated_units), -sigma[j] * (m*treated_units))
+    }
+  }
+  
+  
+  
+  # Constraint 1.6: higher moment differences of each covariate <= mom_tol[j]
+  if (!is.null(mom_tol)) {
+    num_covariates <- length(sigma)
+    for (j in 1:num_covariates) {
+      mom_diff = matrix(0, nrow = 2, ncol = treated_units * control_units)
+      for (i in 1:treated_units) {
+        for (k in 1:control_units) {
+          mom_diff[ ,(i-1)*control_units + k] = treated_covariates[i, j]^mom_num - control_covariates[k, j]^mom_num
+        }
+      }
+      model$A <- rbind(model$A, mom_diff)
+      model$sense <- c(model$sense, "<=", ">=")
+      model$rhs <- c(model$rhs, mom_tol[j] * (m*treated_units), -mom_tol[j] * (m*treated_units))
+    }
+  }
+  
+  
+  
+  # Variable types 1.4: Binary (0 or 1)
+  model$vtype <- rep("B", treated_units * control_units)
+  
+  
+  # Solve the MIP using Gurobi
+  params <- list(OutputFlag = 0)  # Suppress Gurobi output
+  result <- gurobi(model, params = params)
+  #print(result)
+  
+  # Check if a feasible solution was found
+  if (!is.null(result$x)) {
+    # Reshape the solution into a matching matrix
+    matching_matrix <- matrix(result$x, nrow = treated_units, ncol = control_units, byrow = TRUE)
+    
+    #Reshape into match pairs
+    pos_of_1 = which(matching_matrix==1, arr.ind = TRUE)
+    matched_pairs = pos_of_1[order(pos_of_1[ ,1]), ]
+    matched_pairs[ ,2]=matched_pairs[ ,2] + treated_units
+    matched_pairs = as.data.frame(matched_pairs)
+    colnames(matched_pairs) = c("treat_index","control_index")
+    
+    
+    return(list(success = TRUE, runtime = result$runtime, matching_matrix = matching_matrix, matched_pairs = matched_pairs))
+  } else {
+    return(list(success = FALSE, message = "No feasible solution found"))
+  }
+}
+```
+
+
+
+
+
+
+## function: param
+Given dataset as a dataframe, generates the first 4 parameters needed for the mip_matching function.
+
+
+1. expects there is a column named "treat" with 0/1 values indicating whether it is a treat
+2. returns a list
+3. when calling mip_matching function, can use do.call(mip_matching, c(param(df), list(other params=x)))
+```{r eval=FALSE, include=TRUE}
+param = function(df) {
+  t_num = sum(df$treat)  
+  c_num = nrow(df) - t_num  
+  
+  t_matrix = as.matrix(df[df$treat == 1, -which(names(df) == "treat")])
+  c_matrix = as.matrix(df[df$treat == 0, -which(names(df) == "treat")])
+  return(list(
+    treated_units = t_num, 
+    control_units = c_num, 
+    treated_covariates = t_matrix, 
+    control_covariates = c_matrix
+  ))
+}
+```
+
+
+
+
+
+
+## function: after matching group mean
+Calculates the mean after matching of treat and control group for each covariate used in matching \
+Input cov_num: a vector of covariate column index used in matching \
+Returns a matrix, row 1 is treat mean, row 2 is control mean
+```{r eval=FALSE, include=TRUE}
+match_mean = function(data, cov_num, matrix) {
+  controls = which(apply(matrix, 2, function(col) any(col == 1)))
+  
+  mean_matrix = matrix(0, nrow = 2, ncol = length(cov_num))
+  
+  for (i in 1:length(cov_num)) {
+    cur_cov = cov_num[i]
+    
+    cur_treat = mean(data[data["treat"]==1,][,cur_cov])
+    cur_control = mean(data[controls,][,cur_cov])
+    
+    mean_matrix[ ,i] = c(cur_treat, cur_control)
+  }
+  
+  return(mean_matrix)
+}
+```
+
+
+
+
+## function: after matching group dataframes
+Input data and matched_pairs (given in the output of mip_matching function), returns a list containing the after matching treat and control groups.
+```{r eval=FALSE, include=TRUE}
+matched_group_dfs = function(data, matched_pairs) {
+  t_df = data[data["treat"]==1, ]
+  
+  c_df = data[matched_pairs[ ,2], ]
+  
+  return(list(matched_treat = t_df, matched_control = c_df))
+}
+```
+
+
+
+
+
+

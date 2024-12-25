@@ -1,0 +1,324 @@
+---
+title: "Stat 432 Homework 8"
+date: "Assigned: Oct 14, 2024; <span style='color:red'>Due: 11:59 PM CT, Oct 24, 2024</span>"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+editor_options: 
+  chunk_output_type: console
+---
+
+<style>
+  body {
+  text-align: justify}
+</style>
+
+```{css, echo=FALSE}
+  .solution {
+  background-color: #CCDDFF; /* Replace with your desired color */
+  }
+  
+  blockquote {
+  background-color: #CCDDFF; /* Replace with your desired color */
+  font-family: "Times New Roman", serif; /* Change to your desired font family */
+  /* font-size: 16px; /* Change to your desired font size */
+  font-weight: bold; /* Makes the text bold */
+  }
+```
+
+# Question 1: Discriminant Analysis (60 points) 
+
+We will be using the first 2500 observations of the MNIST dataset. You can use the following code, or the saved data from our previous homework.
+
+```{r}
+  # inputs to download file
+  fileLocation <- "https://pjreddie.com/media/files/mnist_train.csv"
+  numRowsToDownload <- 2500
+  localFileName <- paste0("mnist_first", numRowsToDownload, ".RData")
+
+  # download the data and add column names
+  mnist <- read.csv(fileLocation, nrows = numRowsToDownload)
+  numColsMnist <- dim(mnist)[2]
+  colnames(mnist) <- c("Digit", paste("Pixel", seq(1:(numColsMnist - 1)), sep = ""))
+
+  # save file
+  # in the future we can read in from the local copy instead of having to redownload
+  save(mnist, file = localFileName)
+  
+  # you can load the data with the following code
+  load(file = localFileName)
+```
+
+  a. [10 pts] Write you own code to fit a Linear Discriminant Analysis (LDA) model to the MNIST dataset. Use the first 1250 observations as the training set and the remaining observations as the test set. An issue with this dataset is that some pixels display little or no variation across all observations. This zero variance issue poses a problem when inverting the estimated covariance matrix. To address this issue, take digits 1, 7, and 9 from the training data, and perform a screening on the marginal variance of all 784 pixels. Take the top 300 pixels with the largest variance and use them to fit the LDA model. Remove the remaining ones from the training and test data.
+```{r}
+library(MASS)
+# Split data into training and test sets
+train_data <- mnist[1:1250, ]
+test_data <- mnist[1251:2500, ]
+
+# Filter training and test data for digits 1, 7, and 9
+train_data_filtered <- train_data[train_data$Digit %in% c(1, 7, 9), ]
+test_data_filtered <- test_data[test_data$Digit %in% c(1, 7, 9), ]
+
+# Compute the variance for each pixel in the training set
+pixel_variances <- apply(train_data_filtered[, -1], 2, var)
+
+# Select the top 300 pixels based on the highest variance
+top_pixels <- order(pixel_variances, decreasing = TRUE)[1:300]
+
+# Subset the training and test data to keep only the top 300 pixels
+train_data <- train_data_filtered[, c(1, top_pixels + 1)]  # +1 for the Digit column
+test_data <- test_data_filtered[, c(1, top_pixels + 1)]
+
+# Fit the LDA model on the training data
+lda_model <- lda(Digit ~ ., data = train_data)
+
+# Print the LDA model summary
+summary(lda_model)
+
+# Make predictions on the test data
+lda_predictions <- predict(lda_model, newdata = test_data)
+
+# Generate confusion matrix to evaluate predictions
+confusion_matrix <- table(test_data$Digit, lda_predictions$class)
+#accuracy <-mean(lda_predictions$class==test_data$Digit)
+# Calculate and print accuracy
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste("Test Accuracy:", accuracy))
+```
+  b. [30 pts] Write your own code to implement the LDA model. Remember that LDA requires the estimation of several parameters: $\Sigma$, $\mu_k$, and $\pi_k$. Estimate these parameters and calculate the decision scores $\delta_k$ on the testing data to predict the class label. Report the accuracy and the confusion matrix based on the testing data. 
+  
+\begin{enumerate}
+    \item \textbf{Estimate the parameters:}
+    \begin{itemize}
+        \item $\mu_k$: the mean vector for each class $k$.
+        \item $\Sigma$: the shared covariance matrix across all classes.
+        \item $\pi_k$: the prior probability for each class $k$.
+    \end{itemize}
+
+    \item \textbf{Calculate the decision scores $\delta_k(x)$ for each class on the testing data:}
+    \[
+    \delta_k(x) = x^T \Sigma^{-1} \mu_k - \frac{1}{2} \mu_k^T \Sigma^{-1} \mu_k + \log(\pi_k)
+    \]
+    where $x$ is the input data point and $\delta_k(x)$ is the score for class $k$.
+
+\end{enumerate}
+
+```{r}
+# Load necessary libraries
+library(MASS)
+
+# Calculate the class means (mu_k) for each class
+calculate_means <- function(data) {
+  tapply(1:nrow(data), data$Digit, function(idx) colMeans(data[idx, -1]))
+}
+
+# Function to estimate the shared covariance matrix (Sigma)
+calculate_pooled_covariance <- function(data) {
+  cov(data[, -1])
+}
+
+# Estimate the class priors (pi_k)
+calculate_class_priors <- function(data) {
+  table(data$Digit) / nrow(data)
+}
+
+# Function to compute the decision score for LDA
+lda_decision_function <- function(x, mu, sigma_inv, prior) {
+  x %*% sigma_inv %*% mu - 0.5 * t(mu) %*% sigma_inv %*% mu + log(prior)
+}
+
+# Estimate parameters from the training data
+class_means <- calculate_means(train_data)   # Mean vectors (mu_k)
+cov_matrix <- calculate_pooled_covariance(train_data)  # Pooled covariance matrix (Sigma)
+sigma_inv <- solve(cov_matrix)  # Inverse of covariance matrix (Sigma^{-1})
+class_priors <- calculate_class_priors(train_data)  # Class priors (pi_k)
+
+# Initialize an empty matrix to store decision scores for the test data
+scores <- matrix(NA, nrow = nrow(test_data), ncol = 3)  # For 3 classes (1, 7, 9)
+
+# Compute decision scores for each class
+for (k in 1:3) {
+  # For each class, compute the decision score for all test observations
+  scores[, k] <- apply(as.matrix(test_data[, -1]), 1, function(x_row) {
+    lda_decision_function(x_row, class_means[[k]], sigma_inv, class_priors[k])
+  })
+}
+
+# Predict the class with the maximum score for each test observation
+predictions <- apply(scores, 1, which.max)
+
+# Calculate accuracy of predictions
+accuracy <- mean(predictions == test_data$Digit)
+
+# Generate the confusion matrix
+confusion_matrix <- table(predictions, test_data$Digit)
+
+# Output results
+cat("Accuracy:", accuracy, "\n")
+cat("Confusion Matrix:\n")
+print(confusion_matrix)
+
+```
+  c. [10 pts] Use the `lda()` function from MASS package to fit LDA. Report the accuracy and the confusion matrix based on the testing data. Compare your results with part b.
+```{r}
+# Load the MASS package
+library(MASS)
+
+# Fit the LDA model using the MASS lda() function
+lda_model_mass <- lda(Digit ~ ., data = train_data)
+
+# Make predictions on the test set
+lda_predictions_mass <- predict(lda_model_mass, newdata = test_data)
+
+# Generate confusion matrix to evaluate predictions
+confusion_matrix_mass <- table(test_data$Digit, lda_predictions_mass$class)
+
+# Calculate accuracy
+accuracy_mass <- sum(diag(confusion_matrix_mass)) / sum(confusion_matrix_mass)
+
+# Print the results
+cat("Test Accuracy (MASS lda()):", accuracy_mass, "\n")
+cat("Confusion Matrix (MASS lda()):\n")
+print(confusion_matrix_mass)
+
+# Compare with part (b)
+cat("\nComparison with Part (b):\n")
+cat("Accuracy in Part (b):", accuracy, "\n")
+cat("Accuracy in Part (c) using lda():", accuracy_mass, "\n")
+
+if (accuracy_mass > accuracy) {
+  cat("The accuracy using MASS lda() is higher.\n")
+} else if (accuracy_mass < accuracy) {
+  cat("The accuracy using your custom LDA implementation is higher.\n")
+} else {
+  cat("Both methods have the same accuracy.\n")
+}
+```
+  d. [10 pts] Use the `qda()` function from MASS package to fit QDA. Does the code work directly? Why? If you are asked to modify your own code to perform QDA, what would you do? Discuss this issue and propose at least two solutions to address it. If relavent, provide mathematical reasoning (in latex) of your solution. You __do not__ need to implement that with code. 
+\textbf{QDA using the `qda()` function:}
+
+When attempting to fit a QDA model using the `qda()` function from the MASS package, the code may not work directly. This is due to the nature of QDA, which estimates a separate covariance matrix for each class. If the covariance matrix for any class is singular (non-invertible), it leads to an error during matrix inversion.
+
+\textbf{Why does this happen?}
+The covariance matrix can become singular if:
+\begin{itemize}
+    \item The number of features (pixels) exceeds the number of observations, making the covariance matrix not full rank.
+    \item Certain features have near-zero variance within a class, leading to redundancy and singularity.
+\end{itemize}
+
+\textbf{How to address this issue?}
+
+\textbf{Solution 1: Regularization (Shrinkage QDA)}
+One solution is to add a regularization term to the covariance matrix:
+\[
+\Sigma_k^{\text{reg}} = \Sigma_k + \lambda I
+\]
+Where \(\lambda\) is a small positive constant and \(I\) is the identity matrix. This ensures that the covariance matrix becomes invertible. 
+
+\textbf{Solution 2: Dimensionality Reduction (PCA)}
+Another approach is to apply Principal Component Analysis (PCA) to reduce the dimensionality of the data. By projecting the data onto a subspace spanned by the top \(k\) principal components (based on variance), we reduce the likelihood of singular covariance matrices:
+\[
+X_{\text{PCA}} = X V
+\]
+Where \(V\) contains the top \(k\) eigenvectors. This removes redundant features and helps avoid singularity.
+
+\textbf{Conclusion:}
+Both regularization and PCA are effective ways to address the singularity problem in QDA, ensuring the model can handle high-dimensional datasets like MNIST.
+
+# Question 2: Regression Trees (40 points) 
+
+Load data `Carseats` from the `ISLR` package. Use the following code to define the training and test sets.
+
+```{r}
+  # load library
+  library(ISLR)
+  
+  # load data
+  data(Carseats)
+  
+  # set seed
+  set.seed(7)
+  
+  # number of rows in entire dataset
+  n_Carseats <- dim(Carseats)[1]
+  
+  # training set parameters
+  train_percentage <- 0.75
+  train_size <- floor(train_percentage*n_Carseats)
+  train_indices <- sample(x = 1:n_Carseats, size = train_size)
+  
+  # separate dataset into train and test
+  train_Carseats <- Carseats[train_indices,]
+  test_Carseats <- Carseats[-train_indices,]
+```
+
+  a. [20 pts] We seek to predict the variable `Sales` using a regression tree. Load the library `rpart`. Fit a regression tree to the training set using the `rpart()` function, all hyperparameter arguments should be left as default. Load the library `rpart.plot()`. Plot the tree using the `prp()` function. Based on this model, what type of observations has the highest or lowest sales? Predict using the tree onto the test set, calculate and report the MSE on the testing data.
+```{r}
+# Load necessary libraries
+library(ISLR)
+library(rpart)
+library(rpart.plot)
+
+# Load and prepare the data
+data(Carseats)
+set.seed(7)
+
+# Define train-test split
+n_Carseats <- dim(Carseats)[1]
+train_percentage <- 0.75
+train_size <- floor(train_percentage * n_Carseats)
+train_indices <- sample(x = 1:n_Carseats, size = train_size)
+
+# Split data into training and test sets
+train_Carseats <- Carseats[train_indices, ]
+test_Carseats <- Carseats[-train_indices, ]
+
+# Fit a regression tree model to the training set
+tree_model <- rpart(Sales ~ ., data = train_Carseats)
+
+# Plot the regression tree
+prp(tree_model)
+
+# Predict sales on the test set
+tree_predictions <- predict(tree_model, newdata = test_Carseats)
+
+# Calculate the Mean-Squared Error (MSE) on the test data
+mse_tree <- mean((tree_predictions - test_Carseats$Sales)^2)
+cat("Test MSE (Unpruned Tree):", mse_tree, "\n")
+
+# Identify observations with highest/lowest sales from tree splits
+cat("Observations with highest sales are based on the splits of key features like ShelveLoc, Price, and CompPrice.")
+```
+  b. [20 pts] Set the seed to 7 at the beginning of the chunk and do this question in a single chunk so the seed doesn't get switched. Find the largest complexity parameter value of the tree you grew in part a) that will ensure that the cross-validation error < min(cross-validation error) + cross-validation standard deviation. Print that complexity parameter value. Prune the tree using that value. Predict using the pruned tree onto the test set, calculate the test Mean-Squared Error, and print it.
+```{r}
+# Set seed again and fit the model to keep consistency
+set.seed(7)
+
+# Perform cross-validation and find complexity parameter (cp) with minimum error + standard deviation
+printcp(tree_model)  # View cross-validation results
+cp_table <- tree_model$cptable
+min_error <- min(cp_table[, "xerror"])
+best_cp <- cp_table[which.min(cp_table[, "xerror"] + cp_table[, "xstd"] > min_error), "CP"]
+
+# Prune the tree using the best complexity parameter
+pruned_tree <- prune(tree_model, cp = best_cp)
+
+# Plot the pruned tree
+prp(pruned_tree)
+
+# Predict using the pruned tree on the test set
+pruned_predictions <- predict(pruned_tree, newdata = test_Carseats)
+
+# Calculate the Mean-Squared Error (MSE) on the test data for the pruned tree
+mse_pruned <- mean((pruned_predictions - test_Carseats$Sales)^2)
+cat("Test MSE (Pruned Tree):", mse_pruned, "\n")
+
+# Print the best complexity parameter
+cat("Best complexity parameter for pruning:", best_cp, "\n")
+```

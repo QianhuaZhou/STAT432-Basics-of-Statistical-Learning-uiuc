@@ -1,0 +1,8 @@
+"0","price_threshold <- quantile(data$price, 0.95, na.rm = TRUE)"
+"0","filtered_data <- subset(data, price <= price_threshold)"
+"0","ggplot(filtered_data, aes(x = price)) +"
+"0","  geom_histogram(binwidth = 5000, fill = ""lightblue"", color = ""black"", alpha = 0.7) +"
+"0","  labs(title = ""Distribution of Price (Below 95th Percentile)"","
+"0","       x = ""Price (USD)"","
+"0","       y = ""Frequency"") +"
+"0","  theme_minimal()"

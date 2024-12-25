@@ -1,0 +1,9 @@
+"0","library(caret)    "
+"0","library(FNN)         "
+"0","library(ggplot2)    "
+"0","library(gridExtra)   "
+"0","# Step 1: Split the data into training and testing sets"
+"0","set.seed(123)"
+"0","train_index <- createDataPartition(data_for_model$price, p = 0.5, list = FALSE)"
+"2","Error: object 'data_for_model' not found
+"

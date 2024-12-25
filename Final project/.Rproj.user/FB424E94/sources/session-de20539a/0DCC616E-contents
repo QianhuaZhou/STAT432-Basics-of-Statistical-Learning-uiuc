@@ -1,0 +1,54 @@
+---
+title: "Used Car Price Prediction"
+author: "Evelyn Zhou"
+date: "12-12-2024"
+output:
+  pdf_document:
+    fig_width: 3.8
+    fig_height: 2.6
+  html_document:
+    df_print: paged
+always_allow_html: true
+header-includes:
+  - \usepackage{titling}
+  - \pretitle{\begin{center}\Huge\bfseries}
+  - \posttitle{\par\end{center}\vspace{1em}}
+  - \preauthor{\begin{center}\large}
+  - \postauthor{\par\end{center}}
+  - \predate{\begin{center}\large}
+  - \postdate{\par\end{center}}
+---
+\newpage
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::clean_cache()
+```
+
+# Project Description and Abstract
+This project explores predicting used car prices through advanced machine learning techniques and a meticulous data preprocessing pipeline. A comprehensive dataset was cleaned and transformed to address missing values, categorize variables such as mileage, brand, and year, and extract detailed features from complex fields like engine specifications and transmission types. 
+
+In this project, unsupervised learning techniques were employed to enhance data understanding and improve feature space organization. Principal Component Analysis (PCA) was utilized to reduce dimensionality, simplifying high-dimensional data into a more manageable feature set while retaining the most critical information. This process not only improved clustering performance but also provided meaningful visualizations for exploring inherent data patterns. To further explore data relationships, clustering algorithms were applied, allowing segmentation of the dataset based on shared characteristics. Techniques such as the Self-Organizing Map (SOM), which extended beyond conventional methodologies, were employed to uncover structural relationships within the data and their influence on price predictions. These advanced techniques highlighted the power of combining PCA and clustering to improve both data interpretability and subsequent predictive model performance.
+
+Unlike the models reviewed in the Literature Review, which primarily focused on basic preprocessing and model tuning, our analysis also integrated advanced feature engineering. This included systematically extracting and categorizing complex variables such as engine specifications and transmission types, which were not explicitly emphasized in prior studies. These specialized methods provided a competitive edge, improving both interpretability and predictive accuracy by addressing challenges posed by high-dimensional and mixed-type data.
+
+The predictive aspect of the project focused on designing and fine-tuning machine learning models to estimate used car prices accurately. Five distinct models were developed:
+
+- Elastic Net: A linear regression model combining L1 and L2 penalties to address multicollinearity and perform feature selection, ensuring robust predictions.
+
+- K-Nearest Neighbors (KNN): A non-parametric approach using feature similarity (measured by Euclidean distance) to predict prices based on the average of neighboring observations.
+
+- Gradient Boosting Machine (GBM): An ensemble learning method combining weak learners (decision trees) to create a strong predictive model, optimized through iterative boosting techniques.
+
+- Random Forest: A powerful ensemble method that constructs multiple decision trees, averaging their predictions to minimize overfitting. This model achieved the highest performance, with a normalized Mean Squared Error (MSE) of 0.2528, emphasizing the importance of features such as model year, mileage, and brand.
+
+- Neural Network: A deep learning model designed to capture complex non-linear relationships in the dataset, providing competitive predictions after careful architecture tuning.
+
+Each model underwent extensive hyperparameter tuning using grid search and cross-validation to ensure optimal performance. These predictive models highlighted the importance of combining rigorous preprocessing, feature engineering, and advanced machine learning techniques to solve real-world problems effectively.
+
+
+Key insights from this study emphasize the importance of rigorous data preprocessing and feature engineering in addressing challenges posed by high-dimensional and mixed-type datasets. Furthermore, the integration of unsupervised techniques, such as clustering, with predictive models demonstrated enhanced accuracy and interpretability, underlining the potential of combining dimensionality reduction and machine learning in predictive modeling tasks. This project showcases a robust approach to data-driven problem-solving in the context of used car price prediction, offering valuable insights for both research and industry applications.
+
+
+
+Statement of AI usage:
+We use ChatGPT to generate ideas for potential model selections, then write the code part by ourselves. And after we complete the draft version, we refine the description with GPT's help.

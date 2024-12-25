@@ -1,0 +1,132 @@
+---
+title: "Stat 432 Homework 6"
+date: "Assigned: Sep 29, 2024; <span style='color:red'>Due: 11:59 PM CT, Oct 10, 2024</span>"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+<style>
+  body {
+  text-align: justify}
+</style>
+
+```{css, echo=FALSE}
+  .solution {
+  background-color: #CCDDFF; /* Replace with your desired color */
+  }
+  
+  blockquote {
+  background-color: #CCDDFF; /* Replace with your desired color */
+  font-family: "Times New Roman", serif; /* Change to your desired font family */
+  /* font-size: 16px; /* Change to your desired font size */
+  font-weight: bold; /* Makes the text bold */
+  }
+```
+
+## Instruction
+
+<span style='color:red'>__Please remove this section when submitting your homework.__</span>
+
+Students are encouraged to work together on homework and/or utilize advanced AI tools. However, __sharing, copying, or providing any part of a homework solution or code to others__ is an infraction of the [University's rules on Academic Integrity](https://studentcode.illinois.edu/article1/part4/1-401/). Any violation will be punished as severely as possible. Final submissions must be uploaded to [Gradescope](https://www.gradescope.com/courses/570816). No email or hard copy will be accepted. For [**late submission policy and grading rubrics**](https://teazrq.github.io/stat432/syllabus.html), please refer to the course website.
+
+- You are required to submit the rendered file `HWx_yourNetID.pdf`. For example, `HW01_rqzhu.pdf`. Please note that this must be a `.pdf` file. `.html` format __cannot__ be accepted. Make all of your `R` code chunks visible for grading. 
+- Include your Name and NetID in the report.
+- If you use this file or the example homework `.Rmd` file as a template, be sure to __remove this instruction__ section.
+- Make sure that you __set seed__ properly so that the results can be replicated if needed.
+- For some questions, there will be restrictions on what packages/functions you can use. Please read the requirements carefully. As long as the question does not specify such restrictions, you can use anything.
+- __When using AI tools__, you are encouraged to document your comment on your experience with AI tools especially when it's difficult for them to grasp the idea of the question.
+- __On random seed and reproducibility__: Make sure the version of your `R` is $\geq 4.0.0$. This will ensure your random seed generation is the same as everyone else. Please note that updating the `R` version may require you to reinstall all of your packages. 
+
+## Question 1: Multivariate Kernel Regression Simulation (45 pts)
+
+Similar to the previous homework, we will use simulated datasets to evaluate a kernel regression model. You should write your own code to complete this question. We use two-dimensional data generator:
+
+\[ 
+Y = \exp(\beta^T x) + \epsilon
+\]
+
+where \(\beta = c(1, 1) \), $X$ is generated uniformly from $[0, 1]^2$, and $\epsilon$ follows i.i.d. standard Gaussian. Use the following code to generate a set of training and testing data:
+
+```{r}
+  set.seed(2)
+  trainn <- 200
+  testn <- 1
+  p = 2
+  beta <- c(1.5, 1.5)
+  
+  # generate data
+  
+  Xtrain <- matrix(runif(trainn * p), ncol = p)
+  Ytrain <- exp(Xtrain %*% beta) + rnorm(trainn)
+  Xtest <- matrix(runif(testn * p), ncol = p)
+
+  # the first testing observation
+  Xtest
+  
+  # the true expectation of the first testing observation
+  exp(Xtest %*% beta)
+```
+
+  a. [10 pts] For this question, you need to __write your own code__ for implementing a two-dimensional Nadaraya-Watson kernel regression estimator, and predict __just the first testing observation__. For this task, we will use independent Gaussian kernel function introduced during the lecture. Use the same bandwidth $h$ for both dimensions. As a starting point, use $h = 0.07$. What is your predicted value?
+
+  b. [20 pts] Based on our previous understanding the bias-variance trade-off of KNN, do the same simulation analysis for the kernel regression model. Again, you only need to consider the predictor of this one testing point. Your simulation needs to be able to calculate the following quantities:
+  
+  - Bias^2
+  - Variance
+  - Mean squared error (MSE) of prediction
+  
+Use at least 5000 simulation runs. Based on your simulation, answer the following questions:
+
+  * Does the MSE matches our theoretical understanding of the bias-variance trade-off?
+  * Comparing the bias and variance you have, should we increase or decrease the bandwidth $h$ to reduce the MSE?
+
+  c. [15 pts] In practice, we will have to use cross-validation to select the optimal bandwidth. However, if you have the power of simulating as many datasets as you can, and you also know the true model, how would you find the optimal bandwidth for the bias-variance trade-off for this particular model and sample size? Provide enough evidence to claim that your selected bandwidth is (almost) optimal.
+
+## Question 2: Local Polynomial Regression (55 pts)
+
+We introduced the local polynomial regression in the lecture, with the objective function for predicting a target point $x_0$ defined as 
+
+\[
+(\mathbf{y} - \mathbf{X}\boldsymbol{\beta}_{x_0})^\text{T} \mathbf{W} (\mathbf{y} - \mathbf{X}\boldsymbol{\beta}_{x_0}),
+\]
+
+where $W$ is a diagonal weight matrix, with the $i$th diagonal element defined as $K_h(x_0, x_i)$, the kernel distance between $x_i$ and $x_0$. In this question, we will write our own code to implement this model. We will use the same simulated data provided at the beginning of Question 1.
+
+```{r}
+  set.seed(2)
+  trainn <- 200
+  testn <- 1
+  p = 2
+  beta <- c(1.5, 1.5)
+  
+  # generate data
+  
+  Xtrain <- matrix(runif(trainn * p), ncol = p)
+  Ytrain <- exp(Xtrain %*% beta) + rnorm(trainn)
+  Xtest <- matrix(runif(testn * p), ncol = p)
+```
+
+  a. [10 pts] Using the same kernel function as Question 1, calculate the kernel weights of $x_0$ against all observed training data points. Report the 25th, 50th and 75th percentiles of the weights so we can check your answer. 
+
+  b. [15 pts] Based on the objective function, derive the normal equation for estimating the local polynomial regression in matrix form. And then define the estimated $\boldsymbol{\beta}_{x_0}$. Write your answer in latex. 
+
+  c. [10 pts] Based on the observed data provided in Question 1, calculate the estimated $\boldsymbol{\beta}_{x_0}$ for the testing point `Xtest` using the formula you derived. Report the estimated $\boldsymbol{\beta}_{x_0}$. Calculate the prediction on the testing point and compare it with the true expectation.
+
+  d. [20 pts] Now, let's use this model to predict the following 100 testing points. After you fit the model, provide a scatter plot of the true expectation versus the predicted values on these testing points. Does this seem to be a good fit? As a comparison, fit a global linear regression model to the training data and predict the testing points. Does your local linear model outperforms the global linear mode? Note: this is not a simulation study. You should use the same training data provided previously. 
+
+```{r}
+  set.seed(432)
+  testn <- 100
+  Xtest <- matrix(runif(testn * p), ncol = p)
+```
+
+
+
+
+

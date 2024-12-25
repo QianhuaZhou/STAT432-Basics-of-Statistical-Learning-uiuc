@@ -1,0 +1,6 @@
+"0","gower_dist <- daisy(combined_features, metric = ""gower"")"
+"0","hclust_result <- hclust(as.dist(gower_dist), method = ""ward.D2"")"
+"0","plot(hclust_result, "
+"0","     main = ""Dendrogram for Hierarchical Clustering (Mixed Data)"", "
+"0","     xlab = ""Data Points"", "
+"0","     ylab = ""Height"")"

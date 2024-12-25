@@ -1,0 +1,3 @@
+"0",""
+"0","# Codebook vectors"
+"0","plot(som_model, type = ""codes"", main = ""Codebook Vectors"")"

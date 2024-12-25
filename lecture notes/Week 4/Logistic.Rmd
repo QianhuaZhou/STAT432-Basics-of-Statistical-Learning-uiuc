@@ -1,0 +1,246 @@
+---
+title: "Logistic Regression"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: '2'
+header-includes:
+  - \DeclareMathOperator*{\argmin}{arg\,min}
+  - \DeclareMathOperator*{\argmax}{arg\,max}
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width=6, fig.height=6, out.width = "45%", fig.align = 'center')
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse=TRUE)
+```
+
+\def\cD{\cal{D}}
+\def\bA{\mathbf{A}}
+\def\bB{\mathbf{B}}
+\def\bX{\mathbf{X}}
+\def\bH{\mathbf{H}}
+\def\bI{\mathbf{I}}
+\def\bU{\mathbf{U}}
+\def\bD{\mathbf{D}}
+\def\bV{\mathbf{V}}
+\def\bS{\mathbf{S}}
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bs{\mathbf{s}}
+\def\br{\mathbf{r}}
+\def\bu{\mathbf{u}}
+\def\be{\mathbf{e}}
+\def\bv{\mathbf{v}}
+\def\bp{\mathbf{p}}
+\def\bzero{\mathbf{0}}
+\def\bbeta{\boldsymbol \beta}
+\def\bmu{\boldsymbol \mu}
+\def\bepsilon{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\Trace{\text{Trace}}
+\def\Cov{\text{Cov}}
+\def\Var{\text{Var}}
+\def\E{\text{E}}
+\def\pr{\text{pr}}
+
+
+## Modeling Binary Outcomes
+
+To model binary outcomes using a logistic regression, we will use the 0/1 coding of $Y$. We need to set its connection with covariates. Recall in a linear regression, the outcome is continuous, and we set 
+
+$$Y = \beta_0 + \beta_1 X + \epsilon$$
+However, this does not work for classification since $Y$ can only be 0 or 1. Hence we turn to consider modeling the probability $P(Y = 1 | X = \bx)$. Hence, $Y$ is a Bernoulli random variable given $X$, and this is modeled by a function of $X$: 
+
+$$ P(Y = 1 | X = \bx) = \frac{\exp(\bx^\T \bbeta)}{1 + \exp(\bx^\T \bbeta)}$$
+Note that although $\bx^\T \bbeta$ may ranges from 0 to infinity as $X$ changes, the probability will still be bounded between 0 and 1. This is an example of __Generalized Linear Models__. The relationship is still represented using a linear function of $\bx$, $\bx^\T \bbeta$. This is called a __logit link__ function (a function to connect the conditional expectation of $Y$ with $\bbeta^\T \bx$):
+
+$$\eta(a) = \frac{\exp(a)}{1 + \exp(a)}$$
+Hence, $P(Y = 1 | X = \bx) = \eta(\bx^\T \bbeta)$. We can reversely solve this and get 
+$$
+\begin{aligned}
+P(Y = 1 | X = \bx) = \eta(\bx^\T \bbeta) &= \frac{\exp(\bx^\T \bbeta)}{1 + \exp(\bx^\T \bbeta)}\\
+1 - \eta(\bx^\T \bbeta) &= \frac{1}{1 + \exp(\bx^\T \bbeta)} \\
+\text{Odds} = \frac{\eta(\bx^\T \bbeta)}{1-\eta(\bx^\T \bbeta)} &= \exp(\bx^\T \bbeta)\\
+\log(\text{Odds}) = \bx^\T \bbeta
+\end{aligned}
+$$
+Hence, the parameters in a logistic regression is explained as __log odds__. Let's look at a concrete example. 
+
+## Example: Cleveland Clinic Heart Disease Data
+
+We use use the [Cleveland clinic heart disease dataset](https://www.kaggle.com/aavigan/cleveland-clinic-heart-disease-dataset). The goal is to model and predict a class label of whether the patient has a hearth disease or not. This is indicated by whether the `num` variable is $0$ (no presence) or $>0$ (presence). 
+
+```{r}
+  heart = read.csv("processed_cleveland.csv")
+  heart$Y = as.factor(heart$num > 0)
+  table(heart$Y)
+```
+
+For simplicity, let's model the probability of heart disease using the `Age` variable. This can be done using the `glm()` function, which stands for the Generalized Linear Model. The syntax of `glm()` is almost the same as a linear model. Note that it is important to use `family = binomial` to specify the logistic regression. 
+
+```{r}
+  logistic.fit <- glm(Y~age, data = heart, family = binomial)
+  summary(logistic.fit)
+```
+
+The result is similar to a linear regression, with some differences. The parameter estimate of age is 0.05199. It is positive, meaning that increasing age would increase the change of having heart disease. However, this does not mean that 1 year older would increase the change by 0.05. Since, by our previous formula, the probably is not directly expressed as $\bx^\T \bbeta$. 
+
+This calculation can be realized when predicting a new target point. Let's consider a new subject with `Age = 55`. What is the predicted probability of heart disease? Based on our formula, we have 
+
+$$\beta_0 + \beta_1 X = -3.00591 + 0.05199 \times 55 = -0.14646$$
+And the estimated probability is 
+
+$$ P(Y = 1 | X) = \frac{\exp(\beta_0 + \beta_1 X)}{1 + \exp(\beta_0 + \beta_1 X)} = \frac{\exp(-0.14646)}{1 + \exp(-0.14646)} = 0.4634503$$
+Hence, the estimated probability for this subject is 46.3%. This can be done using R code. Please note that if you want to predict the probability, you need to specify `type = "response"`. Otherwise, only $\beta_0 + \beta_1 X$ is provided.
+
+```{r}
+  testdata = data.frame("age" = 55)
+  predict(logistic.fit, newdata = testdata)
+  predict(logistic.fit, newdata = testdata, type = "response")
+```
+
+If we need to make a 0/1 decision about this subject, a natural idea is to see if the predicted probability is greater than 0.5. In this case, we would predict this subject as 0.
+
+## Interpretation of the Parameters
+
+Recall that $\bx^\T \bbeta$ is the log odds, we can further interpret the effect of a single variable. Let's define the following two, with an arbitrary age value $a$:
+
+  * A subject with `age` $= a$
+  * A subject with `age` $= a + 1$
+
+Then, if we look at the __odds ratio__ corresponding to these two target points, we have 
+$$
+\begin{aligned}
+\text{Odds Ratio} &= \frac{\text{Odds of Subject 2}}{\text{Odds of Subject 1}}\\
+&= \frac{\exp(\beta_0 + \beta_1 (a+1))}{\exp(\beta_0 + \beta_1 a)}\\
+&= \frac{\exp(\beta_0 + \beta_1 a) \times \exp(\beta_1)}{\exp(\beta_0 + \beta_1 a)}\\
+&= \exp(\beta_1)
+\end{aligned}
+$$
+Taking $\log$ on both sides, we have 
+
+$$\log(\text{Odds Ratio}) = \beta_1$$
+
+Hence, the odds ratio between these two subjects (__they differ only with one unit of `age`__) can be directly interpreted as the exponential of the parameter of `age`. After taking the log, we can also say that 
+
+> The parameter $\beta$ of a varaible in a logistic regression represents the __log of odds ratio__ associated with one-unit increase of this variable. 
+
+Please note that we usually do not be explicit about what this odds ratio is about (what two subject we are comparing). Because the interpretation of the parameter does not change regardless of the value $a$, as long as the two subjects differ in one unit. 
+
+And also note that this conclusion is regardless of the values of other covaraites. When we have a multivariate model, as long as all other covariates are held the same, the previous derivation will remain the same. 
+
+## Solving a Logistic Regression 
+
+The logistic regression is solved by maximizing the log-likelihood function. Note that the log-likelihood is given by 
+
+$$\ell(\bbeta) = \sum_{i=1}^n \log \, p(y_i | x_i, \bbeta).$$
+Using the probabilities of Bernoulli distribution, we have 
+
+\begin{align}
+\ell(\bbeta) =& \sum_{i=1}^n \log \left\{ \eta(\bx_i)^{y_i} [1-\eta(\bx_i)]^{1-y_i} \right\}\\
+    =& \sum_{i=1}^n y_i \log \frac{\eta(\bx_i)}{1-\eta(\bx_i)} + \log [1-\eta(\bx_i)] \\
+    =& \sum_{i=1}^n y_i \bx_i^\T \bbeta - \log [ 1 + \exp(\bx_i^\T \bbeta)]
+\end{align}
+
+Since this objective function is relatively simple, we can use Newton's method to update. The key is to derive the gradient and Hessian functions. For details, please see the [SMLR text book](https://teazrq.github.io/SMLR/logistic-regression.html#solving-a-logistic-regression). Instead of solving them ourselves, we can simply utilize the `optim()` function to perform the optimization for us. 
+
+## Example: South Africa Heart Data
+
+We use the South Africa heart data as a demonstration. The goal is to estimate the probability of `chd`, the indicator of coronary heart disease. Using the `glm()` function, we can obtain the estimated parameters. 
+
+```{r}
+    library(ElemStatLearn)
+    data(SAheart)
+    
+    heart = SAheart
+    heart$famhist = as.numeric(heart$famhist)-1
+    n = nrow(heart)
+    p = ncol(heart)
+    
+    heart.full = glm(chd~., data=heart, family=binomial)
+    round(summary(heart.full)$coef, dig=3)
+    
+    # fitted value 
+    yhat = (heart.full$fitted.values>0.5)
+    table(yhat, SAheart$chd)
+```
+
+Based on our understandings of optimization we can use the general solver `optim()` by providing the objective function, for any value of $\boldsymbol \beta$, $\mathbf{X}$ and $\mathbf{y}$.
+
+```{r}
+    # the negative log-likelihood function of logistic regression 
+    my.loglik <- function(b, x, y)
+    {
+        bm = as.matrix(b)
+        xb =  x %*% bm
+        # this returns the negative loglikelihood
+        return(sum(y*xb) - sum(log(1 + exp(xb))))
+    }
+```
+
+Let's check the result of this function for some arbitrary $\boldsymbol \beta$ value.  
+
+```{r}
+    # prepare the data matrix, I am adding a column of 1 for intercept
+    x = as.matrix(cbind("intercept" = 1, heart[, 1:9]))
+    y = as.matrix(heart[,10])
+    
+    # check my function
+    b = rep(0, ncol(x))
+    my.loglik(b, x, y) # scalar
+    
+    # check the optimal value and the likelihood
+    my.loglik(heart.full$coefficients, x, y)
+```
+
+Then we optimize this objective function. Note that since this is a maximization problem, we need to either re-define the objective function or use the `fnscale` argument. 
+
+```{r}
+    # Use a general solver to get the optimal value
+    # Note that we are doing maximization instead of minimization, 
+    # we need to specify "fnscale" = -1
+    optim(b, fn = my.loglik, method = "BFGS", 
+          x = x, y = y, control = list("fnscale" = -1))
+```
+
+This matches our `glm()` solution. An example of this optimization problem with more accurate solutions is provided at the [SMLR text book](https://teazrq.github.io/SMLR/logistic-regression.html#example-south-africa-heart-data).
+
+## Penalized Logistic Regression
+
+Similar to a linear regression, we can also apply penalties to a logistic regression to address collinearity problems or select variables in a high-dimensional setting. For example, if we use the Lasso penalty, the objective function is 
+
+$$\sum_{i=1}^n \log \, p(y_i | x_i, \bbeta) + \lambda |\bbeta|_1$$
+This can be done using the `glmnet` package. Specifying `family = "binomial"` will ensure that a logistic regression is used, even your `y` is not a factor (but as numerical 0/1). 
+
+```{r}
+  library(glmnet)
+  lasso.fit = cv.glmnet(x = data.matrix(SAheart[, 1:9]), y = SAheart[,10], 
+                        nfold = 10, family = "binomial")
+  
+  plot(lasso.fit)
+```
+
+The procedure is essentially the same as in a linear regression. And we could obtain the estimated parameters by selecting the best $\lambda$ value. 
+
+```{r}
+  coef(lasso.fit, s = "lambda.min")
+```
+
+
