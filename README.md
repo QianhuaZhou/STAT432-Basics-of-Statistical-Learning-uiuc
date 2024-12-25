@@ -1,7 +1,7 @@
 # [STAT432 Basics of Statistical Learning](https://teazrq.github.io/stat432/index.html)
 
 [![Open Source Love](https://badges.frapsoft.com/os/mit/mit.svg?v=102)](https://github.com/ellerbrock/open-source-badge/)
-[![star this repo](http://githubbadges.com/star.svg?user=zhenye-na&repo=machine-learning-uiuc&style=flat)](https://github.com/zhenye-na/machine-learning-uiuc)
+[![star this repo](http://githubbadges.com/star.svg?user=zhenye-na&repo=machine-learning-uiuc&style=flat)](https://github.com/QianhuaZhou/Basics-of-Statistical-Learning-uiuc?tab=readme-ov-file)
 [![fork this repo](http://githubbadges.com/fork.svg?user=zhenye-na&repo=machine-learning-uiuc&style=flat)](https://github.com/zhenye-na/machine-learning-uiuc/fork)
 [![HitCount](http://hits.dwyl.io/Zhenye-Na/machine-learning-uiuc.svg)](http://hits.dwyl.io/Zhenye-Na/machine-learning-uiuc)
 
