@@ -7,12 +7,7 @@
 
 ## Table of Contents:
 
-* [Course Information](#course-information)
-* [Pre-requisites](#pre-requisites)
-* [Recommended Text](#recommended-text)
-* [Instructors](#instructors)
-* [Assignments](#assignments)
-* [Announcement](#announcement)
+\* [Course Objectives](#course-objectives) * [Pre-requisites](#prerequisites) * [Recommended Text](#textbooks) * [Instructors](#instructors) * [Assignments](#assignments) * [Announcement](#announcement)
 
 
 ## Course Objectives:
@@ -43,8 +38,6 @@ Tentative subjects include:
 - Modeling problems:
   - Personalized Medicine
   - Imaging data
-
-
 
 ## Prerequisites: 
 A course that covers linear regression and uses `R`, such as STAT 420/425. **Good knowledge of probability and statistics (STAT400) and preliminaries of linear algebra (MATH 415) are also assumed**.. 
